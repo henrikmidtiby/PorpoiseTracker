@@ -68,6 +68,7 @@ class PorpoiseTracker(Gtk.Application):
         self._file_menu.update({'_Import drone log': ('import-drone-log', '&lt;Primary&gt;i', self.on_import_drone_log, False)})
         self._file_menu.update({'_Import fov': ('import-fov', '&lt;Primary&gt;&lt;shift&gt;i', self.on_import_fov)})
         self._file_menu.update({'_Import camera params': ('import-camera-params', '&lt;Primary&gt;l', self.on_import_camera_params)})
+        self._file_menu.update({'_Change start height': ('change-start-height', None, self.on_change_start_height)})
         self._file_menu.update({'separator2': None})
         self._file_menu.update({'_Save': ('save', '&lt;Primary&gt;s', self.on_save)})
         self._file_menu.update({'_Save as': ('save-as', '&lt;Primary&gt;&lt;shift&gt;s', self.on_save_as)})
@@ -174,7 +175,7 @@ class PorpoiseTracker(Gtk.Application):
             string = not_open[0] + ' not opened'
             self.grid_handler.update_status(string)
         else:
-            string = 'All god to go!'
+            string = 'All good to go!'
             self.grid_handler.update_status(string, 'ok')
 
     def on_open_video(self, *_):
@@ -215,10 +216,10 @@ class PorpoiseTracker(Gtk.Application):
             try:
                 log_generator.__next__()
                 GLib.idle_add(log_generator.__next__)
+                self.drone_log_open = True
                 self.open_status()
             except ValueError:
                 self.grid_handler.update_status('Error opening drone log', 'error')
-            self.drone_log_open = True
         else:
             dialog.destroy()
 
@@ -248,6 +249,21 @@ class PorpoiseTracker(Gtk.Application):
                 self.camera_params_open = True
             except TypeError:
                 self.grid_handler.update_status('Error opening camera params', 'error')
+        else:
+            dialog.destroy()
+
+    def on_change_start_height(self, *_):
+        dialog = Dialog(self.window, 'Start height in meters', 'cancel_ok')
+        adjustment = Gtk.Adjustment(0, 0, 1000, 1, 1, 0)
+        spinner = Gtk.SpinButton()
+        spinner.set_adjustment(adjustment)
+        dialog.box.add(spinner)
+        dialog.show_all()
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            start_height = spinner.get_value()
+            self.drone_log.height_difference = start_height
+            dialog.destroy()
         else:
             dialog.destroy()
 
