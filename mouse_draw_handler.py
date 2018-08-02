@@ -53,9 +53,10 @@ class MouseDrawHandler:
 
     def add_line(self, x, y, position):
         if self.allow_draw():
-            draw_mark = np.array([*self.last_pressed, x, y, *self.size, position])
+            draw_mark = np.array([self.last_pressed[0], self.last_pressed[1],
+                                  x, y, self.size[0], self.size[1], position])
             drone_data = self.drone_log.get_data(position * 1e-9)
-            image_points = np.array([[x, y], [*self.last_pressed]])
+            image_points = np.array([[x, y], [self.last_pressed[0], self.last_pressed[1]]])
             scale = self.video_handler.video_size[0] / self.size[0]
             scaled_image_points = image_points * scale
             self.fov.set_image_size(*self.video_handler.video_size)
@@ -63,7 +64,9 @@ class MouseDrawHandler:
             length = np.linalg.norm(world_points[1]-world_points[0])
             scaled_image_point = np.mean(scaled_image_points, axis=0)
             latlon = self.fov.get_gps_point(scaled_image_point, *drone_data[:3])
-            data = self.data_tuple(length, drone_data[-1], *latlon, drone_data[0], *drone_data[1], *drone_data[2])
+            data = self.data_tuple(length, drone_data[-1], latlon[0], latlon[1],
+                                   drone_data[0], drone_data[1][0], drone_data[1][1], drone_data[1][2],
+                                   drone_data[2][0], drone_data[2][1])
             line = MarkObject(self.grid_handler.current_name, self.color, draw_mark, data, self.video)
             self.grid_handler.add_marking(line)
             self.markings['lines'].append(line)
@@ -72,14 +75,16 @@ class MouseDrawHandler:
 
     def add_point(self, x, y, position):
         if self.allow_draw():
-            draw_mark = np.array([x, y, *self.size, position])
+            draw_mark = np.array([x, y, self.size[0], self.size[1], position])
             drone_data = self.drone_log.get_data(position * 1e-9)
             image_point = np.array([x, y])
             scale = self.video_handler.video_size[0] / self.size[0]
             scaled_image_point = image_point * scale
             self.fov.set_image_size(*self.video_handler.video_size)
             latlon = self.fov.get_gps_point(scaled_image_point, *drone_data[:3])
-            data = self.data_tuple(None, drone_data[-1], *latlon, drone_data[0], *drone_data[1], *drone_data[2])
+            data = self.data_tuple(None, drone_data[-1], latlon[0], latlon[1],
+                                   drone_data[0], drone_data[1][0], drone_data[1][1], drone_data[1][2],
+                                   drone_data[2][0], drone_data[2][1])
             point = MarkObject(self.grid_handler.current_name, self.color, draw_mark, data, self.video)
             self.grid_handler.add_marking(point)
             self.markings['points'].append(point)
@@ -118,7 +123,8 @@ class MouseDrawHandler:
         if self.allow_draw():
             self.current_pos = np.array([x, y])
             position = self.video_handler.get_position()
-            self.draw_handler.signals.emit('line_draw_live', *self.last_pressed, x, y, *self.size, position)
+            self.draw_handler.signals.emit('line_draw_live', self.last_pressed[0], self.last_pressed[1],
+                                           x, y, self.size[0], self.size[1], position)
 
     def save(self, file_name):
         with open(file_name, 'w') as csv_file:
@@ -128,11 +134,17 @@ class MouseDrawHandler:
                       'red', 'green', 'blue', 'alpha', 'video name']
             writer.writerow(header)
             for p in self.markings['points']:
-                marking = [*p.marking[:2], None, None, *p.marking[2:]]
-                row = [p.name, *p.data, *marking, p.color.red,
-                       p.color.green, p.color.blue, p.color.alpha, p.video]
+                marking = [p.marking[0], p.marking[1], None, None, *p.marking[2:]]
+                row = [p.name]
+                row.extend(p.data)
+                row.extend(marking)
+                row.extend([*p.color])
+                row.append(p.video)
                 writer.writerow(row)
             for l in self.markings['lines']:
-                row = [l.name, *l.data, *l.marking, l.color.red,
-                       l.color.green, l.color.blue, l.color.alpha, l.video]
+                row = [l.name]
+                row.extend(l.data)
+                row.extend(l.marking)
+                row.extend([*l.color])
+                row.append(l.video)
                 writer.writerow(row)

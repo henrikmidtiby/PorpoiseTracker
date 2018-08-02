@@ -97,7 +97,7 @@ class Fov:
 
     def get_gps_point(self, image_point, drone_height, yaw_pitch_roll, pos):
         world_point, zone = self.get_world_point(image_point, drone_height, yaw_pitch_roll, pos, True)
-        lat, lon = self.convert_utm(*world_point, zone)
+        lat, lon = self.convert_utm(world_point[0], world_point[1], zone)
         return lat, lon
 
     @staticmethod
