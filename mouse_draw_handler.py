@@ -134,17 +134,20 @@ class MouseDrawHandler:
                       'red', 'green', 'blue', 'alpha', 'video name']
             writer.writerow(header)
             for p in self.markings['points']:
-                marking = [p.marking[0], p.marking[1], None, None, *p.marking[2:]]
+                marking = [p.marking[0], p.marking[1], None, None]
+                marking.extend(p.marking[2:])
                 row = [p.name]
                 row.extend(p.data)
                 row.extend(marking)
-                row.extend([*p.color])
+                color = [p.color.red, p.color.green, p.color.blue, p.color.alpha]
+                row.extend(color)
                 row.append(p.video)
                 writer.writerow(row)
             for l in self.markings['lines']:
                 row = [l.name]
                 row.extend(l.data)
                 row.extend(l.marking)
-                row.extend([*l.color])
+                color = [l.color.red, l.color.green, l.color.blue, l.color.alpha]
+                row.extend(color)
                 row.append(l.video)
                 writer.writerow(row)

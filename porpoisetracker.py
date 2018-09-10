@@ -85,7 +85,7 @@ class PorpoiseTracker(Gtk.Application):
     def do_activate(self):
         self.menu.activate_menu()
         self.window = Gtk.ApplicationWindow()
-        self.window.set_title('Multi Image Annotator')
+        self.window.set_title('Porpoise Measure')
         self.window.set_application(self)
         self.window.connect('delete_event', self.on_quit)
         self.window.set_size_request(700, 500)
