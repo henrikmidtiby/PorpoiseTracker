@@ -154,8 +154,18 @@ class GridHandler:
 
     def on_remove(self, button):
         if self.current_iter:
-            self.remove_marking_func(self.current_selection)
+            if self.current_selection is None:
+                self.remove_branch()
+            else:
+                self.remove_marking_func(self.current_selection)
             self.tree_store.remove(self.current_iter)
+
+    def remove_branch(self):
+        n_children = self.tree_store.iter_n_children(self.current_iter)
+        for i in range(n_children):
+            child = self.tree_store.iter_nth_child(self.current_iter, i)
+            marking = self.tree_store[child][4]
+            self.remove_marking_func(marking)
 
     def on_status_button(self, button):
         self.popover.set_relative_to(button)

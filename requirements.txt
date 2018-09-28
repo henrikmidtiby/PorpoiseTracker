@@ -1,4 +1,3 @@
-gtk_modules.egg==info
 scipy==1.1.0
 numpy==1.13.3
 opencv_python==3.4.2.17
