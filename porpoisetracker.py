@@ -28,6 +28,7 @@ class PorpoiseTracker(Gtk.Application):
         self.video.signals.connect('video_draw', self.draw_handler.draw)
         self.grid_handler = GridHandler(self.video.jump_to_position)
         self.drone_log = DroneLog()
+        self.video.on_pause_and_slide_change_func = self.drone_log.update_plot
         self.fov = Fov()
         self.mouse_draw = MouseDrawHandler(self.mouse, self.draw_handler, self.video,
                                            self.drone_log, self.fov, self.grid_handler, self.allow_draw)
