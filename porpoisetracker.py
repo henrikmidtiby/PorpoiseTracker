@@ -1,4 +1,7 @@
 import os
+import sys
+if sys.platform == 'win32':
+    os.environ['GST_PLUGIN_PATH'] = './;./gst-plugins'
 import shutil
 from collections import OrderedDict
 from gtk_modules import Menu, Video, VideoDrawHandler, Mouse
@@ -186,6 +189,12 @@ class PorpoiseTracker(Gtk.Application):
         if response == Gtk.ResponseType.OK:
             file = dialog.get_filename()
             dialog.destroy()
+            if sys.platform == 'win32':
+                path = file.split(':')[-1]
+                path_as_list = path.split('\\')
+                file = ''
+                for p in path_as_list[1:]:
+                    file += '/' + p.replace(' ', '\\ ')
             try:
                 self.video.open_video(file)
                 self.enable_media_menu(self._media_menu, True)
@@ -289,8 +298,8 @@ class PorpoiseTracker(Gtk.Application):
 
     @staticmethod
     def on_remove_temp_files(*_):
-        shutil.rmtree('.temp/')
-        os.mkdir('.temp/')
+        shutil.rmtree('temp/')
+        os.mkdir('temp/')
 
     def on_quit(self, *_):
         self.on_remove_temp_files()

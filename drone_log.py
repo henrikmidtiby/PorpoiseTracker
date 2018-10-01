@@ -72,10 +72,11 @@ class DroneLog:
         yield False
 
     def convert_log(self, log_file):
+        path = os.path.join('temp', 'drone_log.csv')
         if sys.platform == 'linux':
-            cmd = 'wine drone_log/TXTlogToCSVtool "' + log_file + '" ".temp/drone_log.csv"'
+            cmd = 'wine drone_log/TXTlogToCSVtool "' + log_file + '" "' + path + '"'
         else:
-            cmd = 'drone_log/TXTlogToCSVtool "' + log_file + '" ".temp/drone_log.csv"'
+            cmd = 'drone_log\TXTlogToCSVtool "' + log_file + '" "' + path + '"'
         self.log_file = log_file
         res = subprocess.call(cmd, shell=True)
         self.logger.info('subprocess results {}'.format(res))
@@ -89,7 +90,7 @@ class DroneLog:
 
     def parse_log(self, log=None):
         if log is None:
-            log = os.path.join('.temp', 'drone_log.csv')
+            log = os.path.join('temp', 'drone_log.csv')
         self.remove_null_bytes(log)
         with open(log, encoding='iso8859_10') as csv_file:
             reader = csv.reader(csv_file, delimiter=',')
