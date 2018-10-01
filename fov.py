@@ -58,7 +58,7 @@ class Fov:
         return np.array([[cos(yaw), -sin(yaw), 0], [sin(yaw), cos(yaw), 0], [0, 0, 1]])
 
     def rotation(self, yaw, pitch, roll):
-        return self.yaw(yaw) @ self.pitch(pitch) @ self.roll(roll)
+        return np.matmul(self.yaw(yaw), np.matmul(self.pitch(pitch), self.roll(roll)))
 
     def get_unit_vector(self, image_point):
         if self.camera_matrix is not None:
@@ -79,7 +79,7 @@ class Fov:
         unit_vector = self.get_unit_vector(image_point)
         yaw_pitch_roll = (-yaw_pitch_roll[0], yaw_pitch_roll[1], yaw_pitch_roll[2])
         rotation_matrix = self.rotation(*yaw_pitch_roll)
-        rotated_vector = rotation_matrix @ unit_vector
+        rotated_vector = np.matmul(rotation_matrix, unit_vector)
         ground_vector = rotated_vector / rotated_vector[2] * -drone_height
         east_north_zone = self.convert_gps(*pos)
         world_point = ground_vector[:2] + np.array(east_north_zone[:2])

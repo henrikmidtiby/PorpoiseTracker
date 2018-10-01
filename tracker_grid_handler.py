@@ -20,21 +20,21 @@ class GridHandler:
         self.scrolled_window.set_size_request(280, 100)
         self.scrolled_window.set_vexpand(True)
         self.toolbar = Gtk.Toolbar()
-        self.toolbar.set_property("icon_size", 1)
+        self.toolbar.set_property('icon_size', 1)
         context = self.toolbar.get_style_context()
-        context.add_class("inline-toolbar")
+        context.add_class('inline-toolbar')
         self.vbox.add(self.scrolled_window)
         self.vbox.add(self.toolbar)
         self.status_button = Gtk.ToolButton()
-        self.status_button.set_icon_name("gtk-info")
+        self.status_button.set_icon_name('dialog-information')
         self.status_button.connect('clicked', self.on_status_button)
         self.toolbar.add(self.status_button)
         self.add_button = Gtk.ToolButton()
-        self.add_button.set_icon_name("gtk-add")
+        self.add_button.set_icon_name('list-add')
         self.add_button.connect('clicked', self.on_add)
         self.toolbar.add(self.add_button)
         self.remove_button = Gtk.ToolButton()
-        self.remove_button.set_icon_name('gtk-remove')
+        self.remove_button.set_icon_name('list-remove')
         self.remove_button.connect('clicked', self.on_remove)
         self.toolbar.add(self.remove_button)
         self.color_button_item = Gtk.ToolItem()
@@ -44,7 +44,7 @@ class GridHandler:
         self.color_button.set_color(Gdk.color_parse('red'))
         self.toolbar.add(self.color_button_item)
         self.jump_to_frame_button = Gtk.ToolButton()
-        self.jump_to_frame_button.set_icon_name('gtk-jump-to')
+        self.jump_to_frame_button.set_icon_name('go-jump')
         self.jump_to_frame_button.connect('clicked', self.on_jump_to_frame)
         self.toolbar.add(self.jump_to_frame_button)
         self.popover = Gtk.Popover()
@@ -174,12 +174,12 @@ class GridHandler:
 
     def update_status(self, message, status_type='info'):
         if status_type == 'error':
-            icon = 'gtk-dialog-error'
+            icon = 'dialog-error'
         elif status_type == 'warning':
-            icon = 'gtk-dialog-warning'
+            icon = 'dialog-warning'
         elif status_type == 'ok':
             icon = 'gtk-ok'
         else:
-            icon = 'gtk-info'
+            icon = 'dialog-information'
         self.status_button.set_icon_name(icon)
         self.popover_label.set_text(message)
