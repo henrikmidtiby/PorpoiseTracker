@@ -29,6 +29,7 @@ python3 porpoisetracker.py
 * Then a drone log and a FOV file must be opened.
 * A camera calibration file from Matlab can also be opened.
 * Now lines can be drawn and the length is displayed in the side menu.
+* Names and color can be changed with the buttons in the lower left.
 * A plot of yaw, pitch and roll from the log is showed with markings where videos starts (green) and end (red).
 * The current time in the log is also showed (yellow).
 
