@@ -329,9 +329,13 @@ class PorpoiseTracker(Gtk.Application):
         label1 = Gtk.Label('This is a application to measure porpoises.\n')
         label2 = Gtk.Label('Made by:')
         label3 = Gtk.Label('Henrik Egemose, hesc@mmmi.sdu.dk')
+        with open('version.txt') as version_file:
+            version = version_file.read()
+        label4 = Gtk.Label('Version: ' + version)
         dialog.box.add(label1)
         dialog.box.add(label2)
         dialog.box.add(label3)
+        dialog.box.add(label4)
         dialog.show_all()
         dialog.run()
         dialog.destroy()
