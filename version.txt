@@ -1,1 +1,1 @@
-[master]v0.5-23+1(pre:a9a083b)
+[master]v0.5-24+1(pre:ea02eb9)
