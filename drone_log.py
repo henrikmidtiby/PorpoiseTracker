@@ -124,7 +124,7 @@ class DroneLog:
                     pos = (latitude, longitude)
                     self.drone_log_data.update({time: (height, yaw_pitch_roll, pos, date_time)})
                     self.log_time_list.append(time)
-                    self.plot_list.append((float(row[gimbal_yaw_idx]), float(row[gimbal_pitch_idx]), float(row[gimbal_roll_idx])))
+                    self.plot_list.append((float(row[gimbal_yaw_idx]), float(row[gimbal_pitch_idx]), float(row[gimbal_roll_idx]), height))
                     is_video = row[video_idx]
                     if is_video and video_start is None:
                         video_start = time
@@ -180,36 +180,66 @@ class PlotWindow(Gtk.Window):
         self.yaw_time = None
         self.pitch_time = None
         self.roll_time = None
+        self.height_time = None
         self.add(self.canvas)
 
     def plot(self, time_stamps, data, video_list):
         time = [t - time_stamps[0] for t in time_stamps]
-        yaw, pitch, roll = zip(*data)
-        axarr = self.f.subplots(3, sharex='all')
-        axarr[0].plot(time, yaw)
+        yaw, pitch, roll, height = zip(*data)
+        axarr = self.f.subplots(nrows=2, ncols=2)
+
+        axarr[0, 0].plot(time, yaw)
+        axarr[0, 0].set_ylim([-180, 180])
+        axarr[0, 0].set_xlim([0, time[-1]])
+        axarr[0, 0].set_xlabel('Seconds')
+        axarr[0, 0].set_ylabel('Degrees')
+        axarr[0, 0].xaxis.set_ticks(np.arange(0, time[-1], 60))
         for video in video_list:
-            axarr[0].axvline(x=video[0] - time_stamps[0], c='green')
-            axarr[0].axvline(x=video[1] - time_stamps[0], c='red')
-        self.yaw_time = axarr[0].axvline(x=0, c='yellow')
-        axarr[0].set_title('yaw')
-        axarr[1].plot(time, pitch)
+            axarr[0, 0].fill_betweenx(y=[-200, 200], x1=video[0] - time_stamps[0], x2=video[1] - time_stamps[0], color='#bbbbbb')
+        self.yaw_time = axarr[0, 0].axvline(x=0, color='red', linewidth=2)
+        axarr[0, 0].set_title('Yaw')
+
+        axarr[0, 1].plot(time, pitch)
+        axarr[0, 1].set_ylim([-100, 30])
+        axarr[0, 1].set_xlim([0, time[-1]])
+        axarr[0, 1].set_xlabel('Seconds')
+        axarr[0, 1].set_ylabel('Degrees')
+        axarr[0, 1].xaxis.set_ticks(np.arange(0, time[-1], 60))
         for video in video_list:
-            axarr[1].axvline(x=video[0] - time_stamps[0], c='green')
-            axarr[1].axvline(x=video[1] - time_stamps[0], c='red')
-        self.pitch_time = axarr[1].axvline(x=0, c='yellow')
-        axarr[1].set_title('pitch')
-        axarr[2].plot(time, roll)
+            axarr[0, 1].fill_betweenx(y=[-200, 200], x1=video[0] - time_stamps[0], x2=video[1] - time_stamps[0], color='#bbbbbb')
+        self.pitch_time = axarr[0, 1].axvline(x=0, color='red', linewidth=2)
+        axarr[0, 1].set_title('Pitch')
+
+        axarr[1, 1].plot(time, roll)
+        axarr[1, 1].set_ylim([-180, 180])
+        axarr[1, 1].set_xlim([0, time[-1]])
+        axarr[1, 1].set_xlabel('Seconds')
+        axarr[1, 1].set_ylabel('Degrees')
+        axarr[1, 1].xaxis.set_ticks(np.arange(0, time[-1], 60))
         for video in video_list:
-            axarr[2].axvline(x=video[0] - time_stamps[0], c='green')
-            axarr[2].axvline(x=video[1] - time_stamps[0], c='red')
-        self.roll_time = axarr[2].axvline(x=0, c='yellow')
-        axarr[2].set_title('roll')
+            axarr[1, 1].fill_betweenx(y=[-200, 200], x1=video[0] - time_stamps[0], x2=video[1] - time_stamps[0], color='#bbbbbb')
+        self.roll_time = axarr[1, 1].axvline(x=0, color='red', linewidth=2)
+        axarr[1, 1].set_title('Roll')
+
+        axarr[1, 0].plot(time, height)
+        axarr[1, 0].set_xlim([0, time[-1]])
+        axarr[1, 0].set_xlabel('Seconds')
+        axarr[1, 0].set_ylabel('Meters')
+        axarr[1, 0].xaxis.set_ticks(np.arange(0, time[-1], 60))
+        ylim = axarr[1, 0].get_ylim()
+        for video in video_list:
+            axarr[1, 0].fill_betweenx(y=ylim, x1=video[0] - time_stamps[0], x2=video[1] - time_stamps[0], color='#bbbbbb')
+        self.height_time = axarr[1, 0].axvline(x=0, color='red', linewidth=2)
+        axarr[1, 0].set_ylim(ylim)
+        axarr[1, 0].set_title('Height')
+
         self.show_all()
 
     def update_plot(self, time):
         self.yaw_time.set_xdata(time)
         self.pitch_time.set_xdata(time)
         self.roll_time.set_xdata(time)
+        self.height_time.set_xdata(time)
         self.canvas.draw()
         self.canvas.flush_events()
 
