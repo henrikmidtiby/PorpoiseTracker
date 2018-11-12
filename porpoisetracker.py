@@ -195,6 +195,8 @@ class PorpoiseTracker(Gtk.Application):
                 file = ''
                 for p in path_as_list[1:]:
                     file += '/' + p.replace(' ', '\\ ')
+            else:
+                file = file.replace(' ', '\\ ')
             try:
                 self.video.open_video(file)
                 self.enable_media_menu(self._media_menu, True)

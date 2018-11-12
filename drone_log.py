@@ -114,13 +114,16 @@ class DroneLog:
                     except ValueError:
                         time = datetime.strptime(row[update_time_idx], '%Y/%m/%d %H:%M:%S').timestamp()
                         date_time = datetime.strptime(row[update_time_idx], '%Y/%m/%d %H:%M:%S')
-                    height = float(row[height_idx])
-                    pitch = float(row[gimbal_pitch_idx]) * np.pi / 180
-                    yaw = float(row[gimbal_yaw_idx]) * np.pi / 180
-                    roll = float(row[gimbal_roll_idx]) * np.pi / 180
-                    yaw_pitch_roll = (yaw, pitch, roll)
-                    latitude = float(row[latitude_idx])
-                    longitude = float(row[longitude_idx])
+                    try:
+                        height = float(row[height_idx])
+                        pitch = float(row[gimbal_pitch_idx]) * np.pi / 180
+                        yaw = float(row[gimbal_yaw_idx]) * np.pi / 180
+                        roll = float(row[gimbal_roll_idx]) * np.pi / 180
+                        yaw_pitch_roll = (yaw, pitch, roll)
+                        latitude = float(row[latitude_idx])
+                        longitude = float(row[longitude_idx])
+                    except ValueError:
+                        continue
                     pos = (latitude, longitude)
                     self.drone_log_data.update({time: (height, yaw_pitch_roll, pos, date_time)})
                     self.log_time_list.append(time)
@@ -142,8 +145,10 @@ class DroneLog:
         for recording in self.video_list:
             recording_length = recording[1] - recording[0]
             diff = abs(recording_length - self.video_length)
+            print(self.video_length, recording_length)
             if diff < keep_diff:
                 video_start_time = recording[0]
+                keep_diff = diff
         self.video_start_time = video_start_time
 
     def get_data(self, time):
