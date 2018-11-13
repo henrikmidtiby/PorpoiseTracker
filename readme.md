@@ -14,8 +14,9 @@ PorpoiseTracker is a tool to measure and track porpoises or other things.
 * Open a terminal in the folder where PorpoiseTracker shall be.
 * Clone the repository:  `git clone git@gitlab.com:UAS-centre/PorpoiseTracker.git`
 * Install dependencies: `pip install -r requirements.txt`
-* Install gtk-mudules: https://gitlab.com/UAS-centre/gtk_modules
+* Install gtk-modules: https://gitlab.com/UAS-centre/gtk_modules
 * If .txt drone log files are used wine64 is also needed. `apt install wine64`
+* Install gstreamer1.0-libav, as the program uses some codecs from libav
 
 ## Usage
 
