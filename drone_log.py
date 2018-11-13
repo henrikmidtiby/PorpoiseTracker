@@ -145,7 +145,8 @@ class DroneLog:
         for recording in self.video_list:
             recording_length = recording[1] - recording[0]
             diff = abs(recording_length - self.video_length)
-            print(self.video_length, recording_length)
+            print("video length: %f\n" % self.video_length)
+            print("recording length: %f\n" % recording_length)
             if diff < keep_diff:
                 video_start_time = recording[0]
                 keep_diff = diff

@@ -198,6 +198,7 @@ class PorpoiseTracker(Gtk.Application):
             else:
                 file = file.replace(' ', '\\ ')
             try:
+                print("Opening video file: '%s'" % file)
                 self.video.open_video(file)
                 self.enable_media_menu(self._media_menu, True)
                 self.video.playback_button.connect('clicked', self._enable_media_menu)
@@ -226,6 +227,7 @@ class PorpoiseTracker(Gtk.Application):
             else:
                 log_generator = self.drone_log.get_log_generator(log_file, self.window)
             try:
+                print("Opening log file: '%s'" % log_file)
                 log_generator.__next__()
                 GLib.idle_add(log_generator.__next__)
                 self.drone_log_open = True
@@ -242,6 +244,7 @@ class PorpoiseTracker(Gtk.Application):
         if response == Gtk.ResponseType.OK:
             fov_file = dialog.get_filename()
             try:
+                print("Opening fov file: '%s'" % fov_file)
                 self.fov.set_fov_from_file(fov_file)
                 self.fov_open = True
                 self.open_status()
@@ -257,6 +260,7 @@ class PorpoiseTracker(Gtk.Application):
             mat_file = dialog.get_filename()
             dialog.destroy()
             try:
+                print("Opening camera parameters in: '%s'" % mat_file)
                 self.fov.set_camera_params(mat_file)
                 self.camera_params_open = True
             except TypeError:
