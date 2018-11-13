@@ -140,6 +140,13 @@ class DroneLog:
                     last_is_video = is_video
 
     def get_video_start_time(self):
+        """
+        Get start time of the loaded video.
+        
+        Iterate through all recordings in the log file and
+        locate the recording with a duration similar to the
+        length of the loaded video.
+        """
         keep_diff = np.inf
         video_start_time = 0
         for recording in self.video_list:
