@@ -42,6 +42,8 @@ class DroneLog:
         for _ in zip(progress_update_generator, parse_log_gen):
             yield True
         progress_dialog.close()
+        self.plot_log_data()
+        self.update_plot(0)
         yield False
 
     def parse_csv_log_generator(self, log_file):
@@ -199,20 +201,36 @@ class PlotWindow(Gtk.Window):
     def plot(self, time_stamps, data, video_list):
         time = [t - time_stamps[0] for t in time_stamps]
         yaw, pitch, roll, height = zip(*data)
+
+        new_yaw = []
+        last_point = 0
+        shift = 0
+        for point in yaw:
+            if (last_point > 150 and point < -150) or (last_point < -150 and point > 150):
+                if point < 0:
+                    shift += 360
+                else:
+                    shift -= 360
+            new_point = point + shift
+            last_point = point
+            new_yaw.append(new_point)
+
         axarr = self.f.subplots(nrows=2, ncols=2)
 
-        axarr[0, 0].plot(time, yaw)
-        axarr[0, 0].set_ylim([-180, 180])
+        for offset in range(-10*360, 10*360+1, 360):
+            yaw_with_offset = [x + offset for x in new_yaw]
+            axarr[0, 0].plot(time, yaw_with_offset, 'blue')
+        axarr[0, 0].set_ylim([-200, 200])
         axarr[0, 0].set_xlim([0, time[-1]])
         axarr[0, 0].set_xlabel('Seconds')
         axarr[0, 0].set_ylabel('Degrees')
         axarr[0, 0].xaxis.set_ticks(np.arange(0, time[-1], 60))
         for video in video_list:
-            axarr[0, 0].fill_betweenx(y=[-200, 200], x1=video[0] - time_stamps[0], x2=video[1] - time_stamps[0], color='#bbbbbb')
+            axarr[0, 0].fill_betweenx(y=[-220, 220], x1=video[0] - time_stamps[0], x2=video[1] - time_stamps[0], color='#bbbbbb')
         self.yaw_time = axarr[0, 0].axvline(x=0, color='red', linewidth=2)
         axarr[0, 0].set_title('Yaw')
 
-        axarr[0, 1].plot(time, pitch)
+        axarr[0, 1].plot(time, pitch, 'blue')
         axarr[0, 1].set_ylim([-100, 30])
         axarr[0, 1].set_xlim([0, time[-1]])
         axarr[0, 1].set_xlabel('Seconds')
@@ -223,7 +241,7 @@ class PlotWindow(Gtk.Window):
         self.pitch_time = axarr[0, 1].axvline(x=0, color='red', linewidth=2)
         axarr[0, 1].set_title('Pitch')
 
-        axarr[1, 1].plot(time, roll)
+        axarr[1, 1].plot(time, roll, 'blue')
         axarr[1, 1].set_ylim([-180, 180])
         axarr[1, 1].set_xlim([0, time[-1]])
         axarr[1, 1].set_xlabel('Seconds')
@@ -234,7 +252,7 @@ class PlotWindow(Gtk.Window):
         self.roll_time = axarr[1, 1].axvline(x=0, color='red', linewidth=2)
         axarr[1, 1].set_title('Roll')
 
-        axarr[1, 0].plot(time, height)
+        axarr[1, 0].plot(time, height, 'blue')
         axarr[1, 0].set_xlim([0, time[-1]])
         axarr[1, 0].set_xlabel('Seconds')
         axarr[1, 0].set_ylabel('Meters')

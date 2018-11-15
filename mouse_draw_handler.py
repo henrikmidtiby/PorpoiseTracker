@@ -33,9 +33,10 @@ class MouseDrawHandler:
         self.video = None
 
     def print_drone_height(self, position):
-        drone_height = self.drone_log.get_data(position * 1e-9)[0]
+        drone_height, rotation = self.drone_log.get_data(position * 1e-9)[:2]
         if drone_height is not None:
-            return str(drone_height) + 'm'
+            string = u'Height: {:.1f}m Yaw: {:.1f}\N{DEGREE SIGN} Pitch: {:.1f}\N{DEGREE SIGN}'.format(drone_height, rotation[0]*180/np.pi, rotation[1]*180/np.pi)
+            return string
         else:
             return False
 
