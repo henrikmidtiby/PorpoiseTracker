@@ -67,33 +67,36 @@ class Fov:
             undist_point = image_point
         image_center = np.array([self.image_size[0]/2, self.image_size[1]/2])
         image_point_from_center = undist_point - image_center
-        horizontal_angle_per_pixel = self.horizontal_fov / self.image_size[0]
-        vertical_angle_per_pixel = self.vertical_fov / self.image_size[1]
-        x = tan(horizontal_angle_per_pixel * image_point_from_center[0])
+        image_plane_width_in_meters = tan(self.horizontal_fov/2)*2
+        image_plane_height_in_meters = tan(self.vertical_fov/2)*2
+        x = image_point_from_center[0] / self.image_size[0] * image_plane_width_in_meters
         y = 1
-        z = tan(- vertical_angle_per_pixel * image_point_from_center[1])
+        z = - image_point_from_center[1] / self.image_size[1] * image_plane_height_in_meters
         vector = np.array([x, y, z])
         return vector
 
-    def get_world_corner(self, world_points, yaw_pitch_roll):
+    def get_world_corner(self, yaw_pitch_roll):
+        image_plane_width_in_meters = tan(self.horizontal_fov / 2) * 2
+        image_plane_height_in_meters = tan(self.vertical_fov / 2) * 2
         yaw_pitch_roll = (-yaw_pitch_roll[0], yaw_pitch_roll[1], yaw_pitch_roll[2])
         rotation_matrix = self.rotation(*yaw_pitch_roll)
-        keep_world_point = None
-        keep_direction = None
-        keep_dot_product = 0
-        for world_point, direction in zip(world_points, 'nsev'):
+        # north-south  and east-west
+        world_points = [(0, 1, 0), (0, -1, 0), (1, 0, 0), (-1, 0, 0)]
+        for world_point in world_points:
             world_rotated_vector = np.matmul(np.transpose(rotation_matrix), world_point)
-            dot_product = np.dot(np.array([0, 1, 0]), world_rotated_vector)
-            print('dot_product: ', dot_product, ' direction: ', direction)
-            if dot_product > keep_dot_product:
-                keep_world_point = world_rotated_vector
-                keep_direction = direction
-                keep_dot_product = dot_product
-        print('world_point: ', keep_world_point, ' direction: ', keep_direction)
-        horizontal_angle_per_pixel = self.horizontal_fov / self.image_size[0]
-        x_image_point_from_center = np.arctan(keep_world_point[0]) / horizontal_angle_per_pixel
-        image_point = x_image_point_from_center + self.image_size[0] / 2
-        return image_point, keep_direction
+            image_point_x = world_rotated_vector[0] / image_plane_width_in_meters * self.image_size[0] + self.image_size[0]/2
+            image_point_y = - world_rotated_vector[2] / image_plane_height_in_meters * self.image_size[1] + self.image_size[1]/2
+            image_point = np.array((image_point_x, image_point_y))
+            yield image_point
+        # make line at 0 and 45 degrees pitch
+        rotation_matrix = self.pitch(yaw_pitch_roll[1])
+        world_points = [(1, 1, 0), (-1, 1, 0), (1, 1, -1), (-1, 1, -1)]
+        for world_point in world_points:
+            world_rotated_vector = np.matmul(np.transpose(rotation_matrix), world_point)
+            image_point_x = world_rotated_vector[0] / image_plane_width_in_meters * self.image_size[0] + self.image_size[0]/2
+            image_point_y = - world_rotated_vector[2] / image_plane_height_in_meters * self.image_size[1] + self.image_size[1]/2
+            image_point = np.array((image_point_x, image_point_y))
+            yield image_point
 
     def get_world_point(self, image_point, drone_height, yaw_pitch_roll, pos, return_zone=False):
         unit_vector = self.get_unit_vector(image_point)
