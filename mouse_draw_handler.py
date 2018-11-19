@@ -18,6 +18,7 @@ class MouseDrawHandler:
         self.mouse_signals.connect('left_mouse_move', self.move)
         self.draw_handler = draw_handler
         self.draw_handler.str_func = self.print_drone_height
+        self.draw_handler.horizon = self.draw_horizon
         self.video_handler = video
         self.drone_log = drone_log
         self.fov = fov
@@ -36,9 +37,17 @@ class MouseDrawHandler:
         drone_height, rotation = self.drone_log.get_data(position * 1e-9)[:2]
         if drone_height is not None:
             string = u'Height: {:.1f}m Yaw: {:.1f}\N{DEGREE SIGN} Pitch: {:.1f}\N{DEGREE SIGN}'.format(drone_height, rotation[0]*180/np.pi, rotation[1]*180/np.pi)
+            self.draw_horizon(position)
             return string
         else:
             return False
+
+    def draw_horizon(self, position):
+        self.fov.set_image_size(*self.video_handler.video_size)
+        drone_rotation = self.drone_log.get_data(position * 1e-9)[1]
+        nsev = [(0, 1, 0), (0, -1, 0), (1, 0, 0), (-1, 0, 0)]
+        x_value, direction = self.fov.get_world_corner(nsev, drone_rotation)
+        return x_value, direction
 
     def pressed(self, event, x, y, width, height):
         self.last_pressed = np.array([x, y])
