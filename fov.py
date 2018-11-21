@@ -1,5 +1,5 @@
 import csv
-from math import tan, cos, sin, pi
+from math import tan, cos, sin, pi, sqrt
 import numpy as np
 import scipy.io as sio
 import utm
@@ -81,22 +81,36 @@ class Fov:
         yaw_pitch_roll = (-yaw_pitch_roll[0], yaw_pitch_roll[1], yaw_pitch_roll[2])
         rotation_matrix = self.rotation(*yaw_pitch_roll)
         # north-south  and east-west
-        world_points = [(0, 1, 0), (0, -1, 0), (1, 0, 0), (-1, 0, 0)]
+        # world_points = [(0, 1, 0), (0, -1, 0), (1, 0, 0), (-1, 0, 0)]
+        world_points = []
+        for x in np.linspace(-np.pi, np.pi, 100):
+            point = (0, cos(x), sin(x))
+            world_points.append(point)
+        for x in np.linspace(-np.pi, np.pi, 100):
+            point = (cos(x), 0, sin(x))
+            world_points.append(point)
+        for x in np.linspace(-np.pi, np.pi, 100):
+            point = (cos(x), sin(x), 0)
+            world_points.append(point)
+        for x in np.linspace(-np.pi, np.pi, 100):
+            point = (cos(x) / sqrt(2), sin(x) / sqrt(2), -1 / sqrt(2))
+            world_points.append(point)
         for world_point in world_points:
             world_rotated_vector = np.matmul(np.transpose(rotation_matrix), world_point)
-            image_point_x = world_rotated_vector[0] / image_plane_width_in_meters * self.image_size[0] + self.image_size[0]/2
-            image_point_y = - world_rotated_vector[2] / image_plane_height_in_meters * self.image_size[1] + self.image_size[1]/2
-            image_point = np.array((image_point_x, image_point_y))
-            yield image_point
+            if world_rotated_vector[1] >= 0:
+                image_point_x = world_rotated_vector[0] / world_rotated_vector[1] / image_plane_width_in_meters * self.image_size[0] + self.image_size[0]/2
+                image_point_y = - world_rotated_vector[2] / world_rotated_vector[1] / image_plane_height_in_meters * self.image_size[1] + self.image_size[1]/2
+                image_point = np.array((image_point_x, image_point_y))
+                yield image_point
         # make line at 0 and 45 degrees pitch
-        rotation_matrix = self.pitch(yaw_pitch_roll[1])
-        world_points = [(1, 1, 0), (-1, 1, 0), (1, 1, -1), (-1, 1, -1)]
-        for world_point in world_points:
-            world_rotated_vector = np.matmul(np.transpose(rotation_matrix), world_point)
-            image_point_x = world_rotated_vector[0] / image_plane_width_in_meters * self.image_size[0] + self.image_size[0]/2
-            image_point_y = - world_rotated_vector[2] / image_plane_height_in_meters * self.image_size[1] + self.image_size[1]/2
-            image_point = np.array((image_point_x, image_point_y))
-            yield image_point
+        # rotation_matrix = self.pitch(yaw_pitch_roll[1])
+        # world_points = [(1, 1, 0), (-1, 1, 0), (1, 1, -1), (-1, 1, -1)]
+        # for world_point in world_points:
+        #     world_rotated_vector = np.matmul(np.transpose(rotation_matrix), world_point)
+        #     image_point_x = world_rotated_vector[0] / image_plane_width_in_meters * self.image_size[0] + self.image_size[0]/2
+        #     image_point_y = - world_rotated_vector[2] / image_plane_height_in_meters * self.image_size[1] + self.image_size[1]/2
+        #     image_point = np.array((image_point_x, image_point_y))
+        #     yield image_point
 
     def get_world_point(self, image_point, drone_height, yaw_pitch_roll, pos, return_zone=False):
         unit_vector = self.get_unit_vector(image_point)
