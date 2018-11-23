@@ -2,6 +2,7 @@ import os
 import sys
 if sys.platform == 'win32':
     os.environ['GST_PLUGIN_PATH'] = './;./gst-plugins'
+import argparse
 import shutil
 from collections import OrderedDict
 from gtk_modules import Menu, Video, VideoDrawHandler, Mouse
@@ -100,6 +101,7 @@ class PorpoiseTracker(Gtk.Application):
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         hbox.pack_start(vertical_box, True, True, 0)
         hbox.pack_start(self.grid_handler.vbox, False, False, 0)
+        self.video.draw_area.connect('realize', self.parse_args)
         self.window.add(hbox)
         self.window.show_all()
         self.mouse_draw.window = self.window
@@ -189,29 +191,33 @@ class PorpoiseTracker(Gtk.Application):
         if response == Gtk.ResponseType.OK:
             file = dialog.get_filename()
             dialog.destroy()
-            if sys.platform == 'win32':
-                path = file.split(':')[-1]
-                path_as_list = path.split('\\')
-                file = ''
-                for p in path_as_list[1:]:
-                    file += '/' + p.replace(' ', '\\ ')
-            else:
-                file = file.replace(' ', '\\ ')
-            try:
-                print("Opening video file: '%s'" % file)
-                self.video.open_video(file)
-                self.enable_media_menu(self._media_menu, True)
-                self.video.playback_button.connect('clicked', self._enable_media_menu)
-                self.drone_log.set_video_length(self.video.duration * 1e-9)
-                self.menu.enable_menu_item('_Import drone log', True)
-                self.menu.enable_menu_item('_Export video', True)
-                self.mouse_draw.video = file
-                self.video_open = True
-                self.open_status()
-            except AttributeError:
-                self.grid_handler.update_status('Error opening video', 'error')
+            self.open_video_from_file(file)
+
         else:
             dialog.destroy()
+
+    def open_video_from_file(self, file):
+        if sys.platform == 'win32':
+            path = file.split(':')[-1]
+            path_as_list = path.split('\\')
+            file = ''
+            for p in path_as_list[1:]:
+                file += '/' + p.replace(' ', '\\ ')
+        else:
+            file = file.replace(' ', '\\ ')
+        try:
+            print("Opening video file: '%s'" % file)
+            self.video.open_video(file)
+            self.enable_media_menu(self._media_menu, True)
+            self.video.playback_button.connect('clicked', self._enable_media_menu)
+            self.drone_log.set_video_length(self.video.duration * 1e-9)
+            self.menu.enable_menu_item('_Import drone log', True)
+            self.menu.enable_menu_item('_Export video', True)
+            self.mouse_draw.video = file
+            self.video_open = True
+            self.open_status()
+        except AttributeError:
+            self.grid_handler.update_status('Error opening video', 'error')
 
     def on_import_drone_log(self, *_):
         dialog = FileDialog(self.window, 'Choose a drone log', 'open')
@@ -221,21 +227,24 @@ class PorpoiseTracker(Gtk.Application):
         if response == Gtk.ResponseType.OK:
             log_file = dialog.get_filename()
             dialog.destroy()
-            self.drone_log.drone_log_data = {}
-            if log_file.endswith('.csv'):
-                log_generator = self.drone_log.get_csv_log_generator(log_file, self.window)
-            else:
-                log_generator = self.drone_log.get_log_generator(log_file, self.window)
-            try:
-                print("Opening log file: '%s'" % log_file)
-                log_generator.__next__()
-                GLib.idle_add(log_generator.__next__)
-                self.drone_log_open = True
-                self.open_status()
-            except ValueError:
-                self.grid_handler.update_status('Error opening drone log', 'error')
+            self.open_drone_log_from_file(log_file)
         else:
             dialog.destroy()
+
+    def open_drone_log_from_file(self, log_file):
+        self.drone_log.drone_log_data = {}
+        if log_file.endswith('.csv'):
+            log_generator = self.drone_log.get_csv_log_generator(log_file, self.window)
+        else:
+            log_generator = self.drone_log.get_log_generator(log_file, self.window)
+        try:
+            print("Opening log file: '%s'" % log_file)
+            log_generator.__next__()
+            GLib.idle_add(log_generator.__next__)
+            self.drone_log_open = True
+            self.open_status()
+        except ValueError:
+            self.grid_handler.update_status('Error opening drone log', 'error')
 
     def on_import_fov(self, *_):
         dialog = FileDialog(self.window, 'Choose a FOV file', 'open')
@@ -243,14 +252,17 @@ class PorpoiseTracker(Gtk.Application):
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             fov_file = dialog.get_filename()
-            try:
-                print("Opening fov file: '%s'" % fov_file)
-                self.fov.set_fov_from_file(fov_file)
-                self.fov_open = True
-                self.open_status()
-            except ValueError:
-                self.grid_handler.update_status('Error opening FOV file', 'error')
+            self.open_fov_file(fov_file)
         dialog.destroy()
+
+    def open_fov_file(self, fov_file):
+        try:
+            print("Opening fov file: '%s'" % fov_file)
+            self.fov.set_fov_from_file(fov_file)
+            self.fov_open = True
+            self.open_status()
+        except ValueError:
+            self.grid_handler.update_status('Error opening FOV file', 'error')
 
     def on_import_camera_params(self, *_):
         dialog = FileDialog(self.window, 'Choose a Camera param Matlab file', 'open')
@@ -259,14 +271,17 @@ class PorpoiseTracker(Gtk.Application):
         if response == Gtk.ResponseType.OK:
             mat_file = dialog.get_filename()
             dialog.destroy()
-            try:
-                print("Opening camera parameters in: '%s'" % mat_file)
-                self.fov.set_camera_params(mat_file)
-                self.camera_params_open = True
-            except TypeError:
-                self.grid_handler.update_status('Error opening camera params', 'error')
+            self.open_camera_params_file(mat_file)
         else:
             dialog.destroy()
+
+    def open_camera_params_file(self, mat_file):
+        try:
+            print("Opening camera parameters in: '%s'" % mat_file)
+            self.fov.set_camera_params(mat_file)
+            self.camera_params_open = True
+        except TypeError:
+            self.grid_handler.update_status('Error opening camera params', 'error')
 
     def on_change_start_height(self, *_):
         dialog = Dialog(self.window, 'Start height in meters', 'cancel_ok')
@@ -354,6 +369,24 @@ class PorpoiseTracker(Gtk.Application):
         dialog.show_all()
         dialog.run()
         dialog.destroy()
+
+    def parse_args(self, _):
+        parser = argparse.ArgumentParser(description='Measure porpoises')
+        parser.add_argument('--video', type=str, help='Open video file')
+        parser.add_argument('--log', type=str, help='Open drone log')
+        parser.add_argument('--fov', type=str, help='Open fov file')
+        parser.add_argument('--cam', type=str, help='Open camera parameter file')
+        args = parser.parse_args()
+        print(args)
+        if args.video:
+            video_file = os.path.abspath(args.video)
+            self.open_video_from_file(video_file)
+        if args.fov:
+            self.open_fov_file(args.fov)
+        if args.cam:
+            self.open_camera_params_file(args.cam)
+        if args.log:
+            self.open_drone_log_from_file(args.log)
 
 
 if __name__ == '__main__':
