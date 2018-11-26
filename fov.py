@@ -1,9 +1,9 @@
 import csv
-from math import tan, cos, sin, pi, sqrt
 import numpy as np
 import scipy.io as sio
 import utm
 import cv2
+from collections import defaultdict
 
 
 class Fov:
@@ -33,8 +33,8 @@ class Fov:
             horizontal_fov_idx = field_names.index('horizontal_fov')
             vertical_fov_idx = field_names.index('vertical_fov')
             row = reader.__next__()
-            self.horizontal_fov = (float(row[horizontal_fov_idx])) * pi / 180
-            self.vertical_fov = (float(row[vertical_fov_idx])) * pi / 180
+            self.horizontal_fov = (float(row[horizontal_fov_idx])) * np.pi / 180
+            self.vertical_fov = (float(row[vertical_fov_idx])) * np.pi / 180
 
     def set_camera_params(self, mat_file):
         mat_contents = sio.loadmat(mat_file, squeeze_me=True)
@@ -42,20 +42,20 @@ class Fov:
         self.dist_coefficients = np.append(mat_contents['dist_coeff'], [0, 0])
 
     def set_fov(self, horizontal_fov, vertical_fov):
-        self.horizontal_fov = horizontal_fov * pi / 180
-        self.vertical_fov = vertical_fov * pi / 180
+        self.horizontal_fov = horizontal_fov * np.pi / 180
+        self.vertical_fov = vertical_fov * np.pi / 180
 
     @staticmethod
     def roll(roll):
-        return np.array([[cos(roll), 0, sin(roll)], [0, 1, 0], [-sin(roll), 0, cos(roll)]])
+        return np.array([[np.cos(roll), 0, np.sin(roll)], [0, 1, 0], [-np.sin(roll), 0, np.cos(roll)]])
 
     @staticmethod
     def pitch(pitch):
-        return np.array([[1, 0, 0], [0, cos(pitch), -sin(pitch)], [0, sin(pitch), cos(pitch)]])
+        return np.array([[1, 0, 0], [0, np.cos(pitch), -np.sin(pitch)], [0, np.sin(pitch), np.cos(pitch)]])
 
     @staticmethod
     def yaw(yaw):
-        return np.array([[cos(yaw), -sin(yaw), 0], [sin(yaw), cos(yaw), 0], [0, 0, 1]])
+        return np.array([[np.cos(yaw), -np.sin(yaw), 0], [np.sin(yaw), np.cos(yaw), 0], [0, 0, 1]])
 
     def rotation(self, yaw, pitch, roll):
         return np.matmul(self.yaw(yaw), np.matmul(self.pitch(pitch), self.roll(roll)))
@@ -67,50 +67,37 @@ class Fov:
             undist_point = image_point
         image_center = np.array([self.image_size[0]/2, self.image_size[1]/2])
         image_point_from_center = undist_point - image_center
-        image_plane_width_in_meters = tan(self.horizontal_fov/2)*2
-        image_plane_height_in_meters = tan(self.vertical_fov/2)*2
+        image_plane_width_in_meters = np.tan(self.horizontal_fov/2)*2
+        image_plane_height_in_meters = np.tan(self.vertical_fov/2)*2
         x = image_point_from_center[0] / self.image_size[0] * image_plane_width_in_meters
         y = 1
         z = - image_point_from_center[1] / self.image_size[1] * image_plane_height_in_meters
         vector = np.array([x, y, z])
         return vector
 
-    def get_world_corner(self, yaw_pitch_roll):
-        image_plane_width_in_meters = tan(self.horizontal_fov / 2) * 2
-        image_plane_height_in_meters = tan(self.vertical_fov / 2) * 2
+    @staticmethod
+    def grouped(iterable, n):
+        return zip(*[iter(iterable)] * n)
+
+    def get_horizon_and_world_corners(self, world_point_dict, yaw_pitch_roll):
+        image_plane_width_in_meters = np.tan(self.horizontal_fov / 2) * 2
+        image_plane_height_in_meters = np.tan(self.vertical_fov / 2) * 2
         yaw_pitch_roll = (-yaw_pitch_roll[0], yaw_pitch_roll[1], yaw_pitch_roll[2])
         rotation_matrix = self.rotation(*yaw_pitch_roll)
-        # north-south  and east-west
-        # world_points = [(0, 1, 0), (0, -1, 0), (1, 0, 0), (-1, 0, 0)]
-        world_points = []
-        for x in np.linspace(-np.pi, np.pi, 100):
-            point = (0, cos(x), sin(x))
-            world_points.append(point)
-        for x in np.linspace(-np.pi, np.pi, 100):
-            point = (cos(x), 0, sin(x))
-            world_points.append(point)
-        for x in np.linspace(-np.pi, np.pi, 100):
-            point = (cos(x), sin(x), 0)
-            world_points.append(point)
-        for x in np.linspace(-np.pi, np.pi, 100):
-            point = (cos(x) / sqrt(2), sin(x) / sqrt(2), -1 / sqrt(2))
-            world_points.append(point)
-        for world_point in world_points:
-            world_rotated_vector = np.matmul(np.transpose(rotation_matrix), world_point)
-            if world_rotated_vector[1] >= 0:
-                image_point_x = world_rotated_vector[0] / world_rotated_vector[1] / image_plane_width_in_meters * self.image_size[0] + self.image_size[0]/2
-                image_point_y = - world_rotated_vector[2] / world_rotated_vector[1] / image_plane_height_in_meters * self.image_size[1] + self.image_size[1]/2
-                image_point = np.array((image_point_x, image_point_y))
-                yield image_point
-        # make line at 0 and 45 degrees pitch
-        # rotation_matrix = self.pitch(yaw_pitch_roll[1])
-        # world_points = [(1, 1, 0), (-1, 1, 0), (1, 1, -1), (-1, 1, -1)]
-        # for world_point in world_points:
-        #     world_rotated_vector = np.matmul(np.transpose(rotation_matrix), world_point)
-        #     image_point_x = world_rotated_vector[0] / image_plane_width_in_meters * self.image_size[0] + self.image_size[0]/2
-        #     image_point_y = - world_rotated_vector[2] / image_plane_height_in_meters * self.image_size[1] + self.image_size[1]/2
-        #     image_point = np.array((image_point_x, image_point_y))
-        #     yield image_point
+        image_points = defaultdict(list)
+        for direction, world_points in world_point_dict.items():
+            for world_point1, world_point2 in self.grouped(world_points, 2):
+                world_rotated_vector1 = np.matmul(np.transpose(rotation_matrix), world_point1)
+                world_rotated_vector2 = np.matmul(np.transpose(rotation_matrix), world_point2)
+                if world_rotated_vector1[1] >= 0 <= world_rotated_vector2[1]:
+                    image_point_par = []
+                    for vector in [world_rotated_vector1, world_rotated_vector2]:
+                        vector = vector / vector[1]
+                        image_point_x = vector[0] / image_plane_width_in_meters * self.image_size[0] + self.image_size[0]/2
+                        image_point_y = - vector[2] / image_plane_height_in_meters * self.image_size[1] + self.image_size[1]/2
+                        image_point_par.append(np.array((image_point_x, image_point_y)))
+                    image_points[direction].append(image_point_par)
+        return image_points
 
     def get_world_point(self, image_point, drone_height, yaw_pitch_roll, pos, return_zone=False):
         unit_vector = self.get_unit_vector(image_point)

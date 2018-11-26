@@ -32,6 +32,7 @@ class MouseDrawHandler:
         self.markings = defaultdict(list)
         self.color = Gdk.RGBA(1, 0, 0, 1)
         self.video = None
+        self.horizon_dict = self.get_horizon_dict()
 
     def print_drone_height(self, position):
         drone_height, rotation = self.drone_log.get_data(position * 1e-9)[:2]
@@ -45,10 +46,27 @@ class MouseDrawHandler:
         self.fov.set_image_size(*self.video_handler.video_size)
         drone_rotation = self.drone_log.get_data(position * 1e-9)[1]
         if drone_rotation is not None:
-            directions = list(self.fov.get_world_corner(drone_rotation))
-            return directions
+            image_points = self.fov.get_horizon_and_world_corners(self.horizon_dict, drone_rotation)
+            return image_points
         else:
             return False
+
+    @staticmethod
+    def get_horizon_dict():
+        world_points = defaultdict(list)
+        for x in np.linspace(-np.pi, np.pi, 100):
+            point = (0, np.cos(x), np.sin(x))
+            world_points['NS'].append(point)
+        for x in np.linspace(-np.pi, np.pi, 100):
+            point = (np.cos(x), 0, np.sin(x))
+            world_points['EW'].append(point)
+        for x in np.linspace(-np.pi, np.pi, 100):
+            point = (np.cos(x), np.sin(x), 0)
+            world_points['pitch0'].append(point)
+        for x in np.linspace(-np.pi, np.pi, 100):
+            point = (np.cos(x) / np.sqrt(2), np.sin(x) / np.sqrt(2), -1 / np.sqrt(2))
+            world_points['pitch45'].append(point)
+        return world_points
 
     def pressed(self, event, x, y, width, height):
         self.last_pressed = np.array([x, y])
