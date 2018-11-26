@@ -152,6 +152,16 @@ class GridHandler:
         else:
             dialog.destroy()
 
+    def add_marking_from_csv(self, marking):
+        time = str('%.1f' % (marking.marking[-1] * 1e-9))
+        length = str('%.2f' % (marking.data[0]) if marking.data[0] else '')
+        for row in self.tree_store:
+            if marking.name == str(row[0]):
+                self.tree_store.append(row.iter, ['', time, length, False, marking, marking.color])
+                return None
+        tree_iter = self.tree_store.append(None, [marking.name, '', '', False, None, marking.color])
+        self.tree_store.append(tree_iter, ['', time, length, False, marking, marking.color])
+
     def on_remove(self, button):
         if self.current_iter:
             if self.current_selection is None:

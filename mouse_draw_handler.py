@@ -9,7 +9,7 @@ from gi.repository import Gdk
 
 class MouseDrawHandler:
     def __init__(self, mouse, draw_handler, video, drone_log, fov, grid_handler, allow_draw):
-        self.data_tuple = namedtuple('data', ['length', 'time', 'lat', 'lon', 'drone_height',
+        self.data_tuple = namedtuple('data', ['length', 'time', 'lat', 'lon', 'easting', 'northing', 'zone', 'drone_height',
                                               'drone_yaw', 'drone_pitch', 'drone_roll', 'drone_lat', 'drone_lon'])
         self.window = None
         self.mouse_signals = mouse.signals
@@ -44,8 +44,11 @@ class MouseDrawHandler:
     def draw_horizon(self, position):
         self.fov.set_image_size(*self.video_handler.video_size)
         drone_rotation = self.drone_log.get_data(position * 1e-9)[1]
-        directions = list(self.fov.get_world_corner(drone_rotation))
-        return directions
+        if drone_rotation is not None:
+            directions = list(self.fov.get_world_corner(drone_rotation))
+            return directions
+        else:
+            return False
 
     def pressed(self, event, x, y, width, height):
         self.last_pressed = np.array([x, y])
@@ -71,8 +74,9 @@ class MouseDrawHandler:
             world_points = self.fov.get_world_points(scaled_image_points, *drone_data[:3])
             length = np.linalg.norm(world_points[1]-world_points[0])
             scaled_image_point = np.mean(scaled_image_points, axis=0)
-            latlon = self.fov.get_gps_point(scaled_image_point, *drone_data[:3])
-            data = self.data_tuple(length, drone_data[-1], latlon[0], latlon[1],
+            world_point, zone = self.fov.get_world_point(scaled_image_point, drone_data[0], drone_data[1], drone_data[2], True)
+            latlon = self.fov.convert_utm(world_point[0], world_point[1], zone)
+            data = self.data_tuple(length, drone_data[-1], latlon[0], latlon[1], world_point[0], world_point[1], zone,
                                    drone_data[0], drone_data[1][0], drone_data[1][1], drone_data[1][2],
                                    drone_data[2][0], drone_data[2][1])
             line = MarkObject(self.grid_handler.current_name, self.color, draw_mark, data, self.video)
@@ -89,8 +93,9 @@ class MouseDrawHandler:
             scale = self.video_handler.video_size[0] / self.size[0]
             scaled_image_point = image_point * scale
             self.fov.set_image_size(*self.video_handler.video_size)
-            latlon = self.fov.get_gps_point(scaled_image_point, *drone_data[:3])
-            data = self.data_tuple(None, drone_data[-1], latlon[0], latlon[1],
+            world_point, zone = self.fov.get_world_point(scaled_image_point, drone_data[0], drone_data[1], drone_data[2], True)
+            latlon = self.fov.convert_utm(world_point[0], world_point[1], zone)
+            data = self.data_tuple(None, drone_data[-1], latlon[0], latlon[1], world_point[0], world_point[1], zone,
                                    drone_data[0], drone_data[1][0], drone_data[1][1], drone_data[1][2],
                                    drone_data[2][0], drone_data[2][1])
             point = MarkObject(self.grid_handler.current_name, self.color, draw_mark, data, self.video)
@@ -134,10 +139,10 @@ class MouseDrawHandler:
             self.draw_handler.signals.emit('line_draw_live', self.last_pressed[0], self.last_pressed[1],
                                            x, y, self.size[0], self.size[1], position)
 
-    def save(self, file_name):
-        with open(file_name, 'w') as csv_file:
+    def save(self, filename):
+        with open(filename, 'w') as csv_file:
             writer = csv.writer(csv_file, delimiter=',')
-            header = ['Name', 'length', 'time', 'lat', 'lon', 'drone height', 'drone yaw', 'drone pitch', 'drone roll',
+            header = ['name', 'length', 'time', 'lat', 'lon', 'easting', 'northing', 'zone', 'drone height', 'drone yaw', 'drone pitch', 'drone roll',
                       'drone lat', 'drone lon', 'x1', 'y1', 'x2', 'y2', 'width', 'height', 'video position',
                       'red', 'green', 'blue', 'alpha', 'video name']
             writer.writerow(header)
@@ -159,3 +164,38 @@ class MouseDrawHandler:
                 row.extend(color)
                 row.append(l.video)
                 writer.writerow(row)
+
+    def open_annotations(self, filename):
+        with open(filename, 'r') as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                if row['length']:
+                    self.add_line_from_csv(row)
+                else:
+                    self.add_point_from_csv(row)
+
+    def add_line_from_csv(self, row):
+        draw_mark = np.array([float(row['x1']), float(row['y1']), float(row['x2']), float(row['y2']),
+                              float(row['width']), float(row['height']), float(row['video position'])])
+        data = self.data_tuple(float(row['length']), row['time'], float(row['lat']), float(row['lon']),
+                               float(row['easting']), float(row['northing']), row['zone'],
+                               float(row['drone height']), float(row['drone yaw']), float(row['drone pitch']), float(row['drone roll']),
+                               float(row['drone lat']), float(row['drone lon']))
+        color = Gdk.RGBA(float(row['red']), float(row['green']), float(row['blue']), float(row['alpha']))
+        line = MarkObject(row['name'], color, draw_mark, data, row['video name'])
+        self.grid_handler.add_marking_from_csv(line)
+        self.markings['lines'].append(line)
+        self.update_draw_lines()
+
+    def add_point_from_csv(self, row):
+        draw_mark = np.array([float(row['x1']), float(row['y1']), float(row['width']), float(row['height']), float(row['video position'])])
+        data = self.data_tuple(None, row['time'], float(row['lat']), float(row['lon']),
+                               float(row['easting']), float(row['northing']), row['zone'],
+                               float(row['drone height']), float(row['drone yaw']), float(row['drone pitch']), float(row['drone roll']),
+                               float(row['drone lat']), float(row['drone lon']))
+        color = Gdk.RGBA(float(row['red']), float(row['green']), float(row['blue']), float(row['alpha']))
+        point = MarkObject(row['name'], color, draw_mark, data, row['video name'])
+        self.grid_handler.add_marking_from_csv(point)
+        self.markings['points'].append(point)
+        self.update_draw_points()
+

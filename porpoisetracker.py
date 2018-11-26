@@ -73,6 +73,7 @@ class PorpoiseTracker(Gtk.Application):
         self._file_menu.update({'_Import drone log': ('import-drone-log', '&lt;Primary&gt;i', self.on_import_drone_log, False)})
         self._file_menu.update({'_Import fov': ('import-fov', '&lt;Primary&gt;&lt;shift&gt;i', self.on_import_fov)})
         self._file_menu.update({'_Import camera params': ('import-camera-params', '&lt;Primary&gt;l', self.on_import_camera_params)})
+        self._file_menu.update({'_Open annotations': ('open-annotations', '&lt;Primary&gt;&lt;shift&gt;o', self.on_open_annotations)})
         self._file_menu.update({'_Change start height': ('change-start-height', None, self.on_change_start_height)})
         self._file_menu.update({'separator2': None})
         self._file_menu.update({'_Save': ('save', '&lt;Primary&gt;s', self.on_save)})
@@ -317,6 +318,23 @@ class PorpoiseTracker(Gtk.Application):
     def on_export_video(self, *_):
         pass
 
+    def on_open_annotations(self, *_):
+        dialog = FileDialog(self.window, 'Choose a annotations csv file', 'open')
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            file = dialog.get_filename()
+            dialog.destroy()
+            self.open_annotations(file)
+        else:
+            dialog.destroy()
+
+    def open_annotations(self, file):
+        try:
+            print("Opening annotations file: '%s'" % file)
+            self.mouse_draw.open_annotations(file)
+        except ValueError:
+            self.grid_handler.update_status('Error opening annotations file', 'error')
+
     @staticmethod
     def on_remove_temp_files(*_):
         shutil.rmtree('temp/')
@@ -376,8 +394,8 @@ class PorpoiseTracker(Gtk.Application):
         parser.add_argument('--log', type=str, help='Open drone log')
         parser.add_argument('--fov', type=str, help='Open fov file')
         parser.add_argument('--cam', type=str, help='Open camera parameter file')
+        parser.add_argument('--annotations', type=str, help='Open annotations file')
         args = parser.parse_args()
-        print(args)
         if args.video:
             video_file = os.path.abspath(args.video)
             self.open_video_from_file(video_file)
@@ -385,6 +403,8 @@ class PorpoiseTracker(Gtk.Application):
             self.open_fov_file(args.fov)
         if args.cam:
             self.open_camera_params_file(args.cam)
+        if args.annotations:
+            self.open_annotations(args.annotations)
         if args.log:
             self.open_drone_log_from_file(args.log)
 
