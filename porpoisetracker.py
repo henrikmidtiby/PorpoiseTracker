@@ -53,14 +53,16 @@ class PorpoiseTracker(Gtk.Application):
         self.menu.add_sub_menu('_Help', self._help)
 
     def add_media_submenu(self):
+        self._media_menu.update({'_Toggle drawing Horizon': ('toggle-drawing-horizon', '&lt;Primary&gt;h', self.toggle_draw_horizon, False)})
+        self._media_menu.update({'separator1': None})
         self._media_menu.update({'_Play/Pause': ('play-pause', 'space', self.on_play_pause, False)})
         self._media_menu.update({'_Speed x1/2': ('speed1-2', 'minus', self.on_speed_x1_2, False)})
         self._media_menu.update({'_Speed x1': ('speed1', '0', self.on_speed_x1, False)})
         self._media_menu.update({'_Speed x5': ('speed5', 'plus', self.on_speed_x5, False)})
-        self._media_menu.update({'separator1': None})
+        self._media_menu.update({'separator2': None})
         self._media_menu.update({'_Next frame': ('next-frame', '2', self.on_next_frame, False)})
         self._media_menu.update({'_Previous frame': ('previous-frame', '1', self.on_previous_frame, False)})
-        self._media_menu.update({'separator2': None})
+        self._media_menu.update({'separator3': None})
         self._media_menu.update({'_Zoom in': ('zoom-in', '&lt;Primary&gt;plus', self.on_zoom_in, False)})
         self._media_menu.update({'_Zoom Out': ('zoom-out', '&lt;Primary&gt;minus', self.on_zoom_out, False)})
         self._media_menu.update({'_Zoom to 100%': ('zoom-normal', '&lt;Primary&gt;0', self.on_zoom_normal, False)})
@@ -343,6 +345,9 @@ class PorpoiseTracker(Gtk.Application):
     def on_quit(self, *_):
         self.on_remove_temp_files()
         self.quit()
+
+    def toggle_draw_horizon(self, *_):
+        self.mouse_draw.toggle_draw_horizon()
 
     def on_play_pause(self, *_):
         self.video.playback_button.clicked()

@@ -42,6 +42,13 @@ class MouseDrawHandler:
         else:
             return False
 
+    def toggle_draw_horizon(self):
+        if self.draw_handler.horizon is not None:
+            self.draw_handler.horizon = None
+        else:
+            self.draw_handler.horizon = self.draw_horizon
+        self.video_handler.emit_draw_signal()
+
     def draw_horizon(self, position):
         self.fov.set_image_size(*self.video_handler.video_size)
         drone_rotation = self.drone_log.get_data(position * 1e-9)[1]
@@ -69,16 +76,18 @@ class MouseDrawHandler:
         return world_points
 
     def pressed(self, event, x, y, width, height):
-        self.last_pressed = np.array([x, y])
-        self.size = (width, height)
+        if self.video_handler.player_paused:
+            self.last_pressed = np.array([x, y])
+            self.size = (width, height)
 
     def released(self, event, x, y):
-        dist = np.linalg.norm(self.last_pressed - np.array([x, y]))
-        position = self.video_handler.get_position()
-        if dist < 5:
-            self.add_point(x, y, position)
-        else:
-            self.add_line(x, y, position)
+        if self.video_handler.player_paused:
+            dist = np.linalg.norm(self.last_pressed - np.array([x, y]))
+            position = self.video_handler.get_position()
+            if dist < 5:
+                self.add_point(x, y, position)
+            else:
+                self.add_line(x, y, position)
 
     def add_line(self, x, y, position):
         if self.allow_draw():
@@ -151,11 +160,12 @@ class MouseDrawHandler:
         self.draw_handler.lines = lines
 
     def move(self, event, x, y):
-        if self.allow_draw():
-            self.current_pos = np.array([x, y])
-            position = self.video_handler.get_position()
-            self.draw_handler.signals.emit('line_draw_live', self.last_pressed[0], self.last_pressed[1],
-                                           x, y, self.size[0], self.size[1], position)
+        if self.video_handler.player_paused:
+            if self.allow_draw():
+                self.current_pos = np.array([x, y])
+                position = self.video_handler.get_position()
+                self.draw_handler.signals.emit('line_draw_live', self.last_pressed[0], self.last_pressed[1],
+                                               x, y, self.size[0], self.size[1], position)
 
     def save(self, filename):
         with open(filename, 'w') as csv_file:
