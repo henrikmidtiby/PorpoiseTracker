@@ -1,0 +1,266 @@
+---
+title: "Tracking fixed objects"
+author: "Henrik Skov Midtiby"
+output: html_notebook
+---
+
+# Data
+
+The data this document is based on is from recordings from Måle strand 
+dated 2018-07-04.
+Three fixed objects are tracked over time and their calculated position 
+is analysed.
+
+Input data files:
+
+* DJI_0003.MOV
+* DJIFlightRecord_2018-07-04_[10-42-34].txt
+
+# Getting an overview of the data.
+
+```{r include=FALSE}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(cowplot))
+library(lubridate)
+library(sp)
+suppressPackageStartupMessages(library(rgdal))
+library(knitr)
+```
+
+
+```{r include=FALSE}
+# Function implementation taken from 
+# https://stackoverflow.com/a/30225804
+
+LongLatToUTM<-function(x,y,zone){
+  xy <- data.frame(ID = 1:length(x), X = x, Y = y)
+  coordinates(xy) <- c("X", "Y")
+  proj4string(xy) <- CRS("+proj=longlat +datum=WGS84")  ## for example
+  res <- spTransform(xy, CRS(paste("+proj=utm +zone=",zone," ellps=WGS84",sep='')))
+  return(as.data.frame(res))
+}
+```
+
+
+Load data, convert coordinates to UTM and shift the origin of the coordinate system
+to be closer to the objects of interest.
+```{r, message=FALSE, echo=FALSE}
+interestpoints <- readr::read_csv('DJI_0003.interestpoints.csv') %>%
+  mutate(time2 = as.numeric(as.POSIXct(time, origin = lubridate::origin)), 
+         time2 = time2 - min(time2)) %>%
+  mutate(utm_easting = LongLatToUTM(lon, lat, "32N")$X, 
+         utm_northing =  LongLatToUTM(lon, lat, "32N")$Y, 
+         drone_utm_easting = LongLatToUTM(`drone lon`, `drone lat`, "32N")$X, 
+         drone_utm_northing = LongLatToUTM(`drone lon`, `drone lat`, "32N")$Y) %>%
+  mutate(drone_utm_easting = drone_utm_easting - min(utm_easting), 
+         drone_utm_northing = drone_utm_northing - min(utm_northing), 
+         utm_easting = utm_easting - min(utm_easting), 
+         utm_northing = utm_northing - min(utm_northing))
+```
+
+
+
+Counting the number of observtions of each fixed point.
+```{r}
+interestpoints %>%
+  count(Name) %>%
+  kable()
+```
+
+
+Get an overview of the three tracked objects.
+```{r echo=FALSE}
+interestpoints %>%
+  ggplot() + 
+  geom_point(aes(utm_easting, utm_northing, color=Name)) + 
+  labs(subtitle = 'UTM Coordinates', 
+       x = 'Easting', 
+       y = 'Northing')
+```
+
+
+
+
+```{r echo=FALSE}
+interestpoints %>%
+  ggplot() + 
+  geom_point(aes(utm_easting, utm_northing, color=time2)) + 
+  scale_color_viridis_c() +
+  facet_wrap(~Name) + 
+  coord_equal() + 
+  labs(color = "Time")
+```
+
+
+
+## A closer look on the three tracked elements
+
+### Udspring
+
+```{r echo=FALSE}
+temp <- interestpoints %>%
+  filter(Name == 'Udspring')
+
+temp %>%
+  ggplot() + 
+  geom_segment(aes(x = utm_easting, y = utm_northing, 
+                   xend = drone_utm_easting, 
+                   yend = drone_utm_northing), 
+               alpha = 0.2) + 
+  geom_point(aes(utm_easting, utm_northing, color=time2)) + 
+  scale_color_viridis_c() +
+  coord_equal() + 
+  labs(color = 'Time', 
+       x = 'Easting [m]', 
+       y = 'Northing [m]', 
+       title = 'Tracking "udspring"', 
+       subtitle = 'Position of UAV and target over time') + 
+  theme(legend.justification = "bottom") -> plotA
+
+temp %>%
+  ggplot() + 
+  geom_point(aes(x1, y1, color = time2)) + 
+  expand_limits(x = c(0, 2211), y = c(0, 1243)) + 
+  scale_color_viridis_c() +
+  scale_y_reverse() + 
+  coord_fixed() + 
+  labs(color = '', 
+       subtitle = 'Image coordinates', 
+       x = '', 
+       y = '') +
+  theme(legend.position = 'none') -> plotB
+
+temp %>%
+  ggplot() + 
+  geom_point(aes(utm_easting, utm_northing, color=time2)) + 
+  scale_color_viridis_c() +
+  coord_equal() + 
+  labs(color = '', 
+       x = '', 
+       y = '', 
+       title = '', 
+       subtitle = '') +
+  theme(legend.position = 'none') -> plotC
+
+ggdraw() +
+  draw_plot(plotA, 0, 0, 0.8, 1) +
+  draw_plot(plotB, 0.5, 0.50, 0.5, 0.4) +
+  draw_plot(plotC, 0.5, 0.02, 0.5, 0.5)
+```
+
+
+
+### Rock
+
+```{r echo=FALSE}
+temp <- interestpoints %>%
+  filter(Name == 'Sten')
+
+temp %>%
+  ggplot() + 
+  geom_segment(aes(x = utm_easting, y = utm_northing, 
+                   xend = drone_utm_easting, 
+                   yend = drone_utm_northing), 
+               alpha = 0.2) + 
+  geom_point(aes(utm_easting, utm_northing, color=time2)) + 
+  scale_color_viridis_c() +
+  coord_equal() + 
+  labs(color = 'Time', 
+       x = 'Easting [m]', 
+       y = 'Northing [m]', 
+       title = 'Tracking "sten"', 
+       subtitle = 'Position of UAV and target over time') + 
+  theme(legend.justification = "bottom") -> plotA
+
+temp %>%
+  ggplot() + 
+  geom_point(aes(x1, y1, color = time2)) + 
+  expand_limits(x = c(0, 2211), y = c(0, 1243)) + 
+  scale_color_viridis_c() +
+  scale_y_reverse() + 
+  coord_fixed() + 
+  labs(color = '', 
+       subtitle = 'Image coordinates', 
+       x = '', 
+       y = '') +
+  theme(legend.position = 'none') -> plotB
+
+temp %>%
+  ggplot() + 
+  geom_point(aes(utm_easting, utm_northing, color=time2)) + 
+  scale_color_viridis_c() +
+  coord_equal() + 
+  labs(color = '', 
+       x = '', 
+       y = '', 
+       title = '', 
+       subtitle = '') +
+  theme(legend.position = 'none') -> plotC
+
+ggdraw() +
+  draw_plot(plotA, 0, 0, 0.8, 1) +
+  draw_plot(plotB, 0.5, 0.50, 0.5, 0.4) +
+  draw_plot(plotC, 0.5, 0.02, 0.5, 0.5)
+```
+
+
+### Sea weed cross
+
+```{r echo=FALSE}
+temp <- interestpoints %>%
+  filter(Name == 'Weed cross')
+
+temp %>%
+  ggplot() + 
+  geom_segment(aes(x = utm_easting, y = utm_northing, 
+                   xend = drone_utm_easting, 
+                   yend = drone_utm_northing), 
+               alpha = 0.2) + 
+  geom_point(aes(utm_easting, utm_northing, color=time2)) + 
+  scale_color_viridis_c() +
+  coord_equal() + 
+  labs(color = 'Time', 
+       x = 'Easting [m]', 
+       y = 'Northing [m]', 
+       title = 'Tracking "sea weed cross"', 
+       subtitle = 'Position of UAV and target over time') + 
+  theme(legend.justification = "bottom") -> plotA
+
+temp %>%
+  ggplot() + 
+  geom_point(aes(x1, y1, color = time2)) + 
+  expand_limits(x = c(0, 2211), y = c(0, 1243)) + 
+  scale_color_viridis_c() +
+  scale_y_reverse() + 
+  coord_fixed() + 
+  labs(color = '', 
+       subtitle = 'Image coordinates', 
+       x = '', 
+       y = '') +
+  theme(legend.position = 'none') -> plotB
+
+temp %>%
+  ggplot() + 
+  geom_point(aes(utm_easting, utm_northing, color=time2)) + 
+  scale_color_viridis_c() +
+  coord_equal() + 
+  labs(color = '', 
+       x = '', 
+       y = '', 
+       title = '', 
+       subtitle = '') +
+  theme(legend.position = 'none') -> plotC
+
+ggdraw() +
+  draw_plot(plotA, 0, 0, 0.8, 1) +
+  draw_plot(plotB, 0.5, 0.50, 0.5, 0.4) +
+  draw_plot(plotC, 0.5, 0.02, 0.5, 0.5)
+```
+
+
+
+
+
+
+
+
