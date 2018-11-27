@@ -22,6 +22,7 @@ class DroneLog:
         self.video_list = []
         self.plot_list = []
         self.video_start_time = None
+        self.video_length_difference_to_logfile = None
         self.plot_win = None
         self.height_difference = 0
         self.video_length = None
@@ -44,6 +45,7 @@ class DroneLog:
         progress_dialog.close()
         self.plot_log_data()
         self.update_plot(0)
+        self.show_warning_if_video_and_log_does_not_match()
         yield False
 
     def parse_csv_log_generator(self, log_file):
@@ -71,7 +73,17 @@ class DroneLog:
         progress_dialog.close()
         self.plot_log_data()
         self.update_plot(0)
+        self.show_warning_if_video_and_log_does_not_match()
         yield False
+
+    def show_warning_if_video_and_log_does_not_match(self):
+        if self.video_length_difference_to_logfile > 2:
+            dialog = Gtk.MessageDialog(self.plot_win, 0, Gtk.MessageType.ERROR,
+                                       Gtk.ButtonsType.CANCEL, "Error: Video and log does probably not match")
+            dialog.format_secondary_text(
+                "The video and log file recording differs by %.1f seconds." % self.video_length_difference_to_logfile)
+            dialog.run()
+            dialog.destroy()
 
     def convert_log(self, log_file):
         path = os.path.join('temp', 'drone_log.csv')
@@ -160,6 +172,7 @@ class DroneLog:
                 video_start_time = recording[0]
                 keep_diff = diff
         self.video_start_time = video_start_time
+        self.video_length_difference_to_logfile = keep_diff
 
     def get_data(self, time):
         diff = np.Inf
