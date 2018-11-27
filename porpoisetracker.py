@@ -201,10 +201,9 @@ class PorpoiseTracker(Gtk.Application):
 
     def open_video_from_file(self, file):
         if sys.platform == 'win32':
-            path = file.split(':')[-1]
-            path_as_list = path.split('\\')
+            path_as_list = file.split('\\')
             file = ''
-            for p in path_as_list[1:]:
+            for p in path_as_list:
                 file += '/' + p.replace(' ', '\\ ')
         else:
             file = file.replace(' ', '\\ ')
