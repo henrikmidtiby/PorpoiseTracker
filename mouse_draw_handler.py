@@ -197,32 +197,32 @@ class MouseDrawHandler:
         with open(filename, 'r') as csv_file:
             reader = csv.DictReader(csv_file)
             for row in reader:
-                if row['length']:
+                if row.get('length'):
                     self.add_line_from_csv(row)
                 else:
                     self.add_point_from_csv(row)
 
     def add_line_from_csv(self, row):
-        draw_mark = np.array([float(row['x1']), float(row['y1']), float(row['x2']), float(row['y2']),
-                              float(row['width']), float(row['height']), float(row['video position'])])
-        data = self.data_tuple(float(row['length']), row['time'], float(row['lat']), float(row['lon']),
-                               float(row['easting']), float(row['northing']), row['zone'],
-                               float(row['drone height']), float(row['drone yaw']), float(row['drone pitch']), float(row['drone roll']),
-                               float(row['drone lat']), float(row['drone lon']))
-        color = Gdk.RGBA(float(row['red']), float(row['green']), float(row['blue']), float(row['alpha']))
-        line = MarkObject(row['name'], color, draw_mark, data, row['video name'])
+        draw_mark = np.array([float(row.get('x1', 0)), float(row.get('y1', 0)), float(row.get('x2', 0)), float(row.get('y2', 0)),
+                              float(row.get('width', 0)), float(row.get('height', 0)), float(row.get('video position', 0))])
+        data = self.data_tuple(float(row.get('length', 0)), row.get('time'), float(row.get('lat', 0)), float(row.get('lon', 0)),
+                               float(row.get('easting', 0)), float(row.get('northing', 0)), row.get('zone'),
+                               float(row.get('drone height', 0)), float(row.get('drone yaw', 0)), float(row.get('drone pitch', 0)), float(row.get('drone roll', 0)),
+                               float(row.get('drone lat', 0)), float(row.get('drone lon', 0)))
+        color = Gdk.RGBA(float(row.get('red', 1)), float(row.get('green', 0)), float(row.get('blue', 0)), float(row.get('alpha', 1)))
+        line = MarkObject(row.get('name'), color, draw_mark, data, row.get('video name'))
         self.grid_handler.add_marking_from_csv(line)
         self.markings['lines'].append(line)
         self.update_draw_lines()
 
     def add_point_from_csv(self, row):
-        draw_mark = np.array([float(row['x1']), float(row['y1']), float(row['width']), float(row['height']), float(row['video position'])])
-        data = self.data_tuple(None, row['time'], float(row['lat']), float(row['lon']),
-                               float(row['easting']), float(row['northing']), row['zone'],
-                               float(row['drone height']), float(row['drone yaw']), float(row['drone pitch']), float(row['drone roll']),
-                               float(row['drone lat']), float(row['drone lon']))
-        color = Gdk.RGBA(float(row['red']), float(row['green']), float(row['blue']), float(row['alpha']))
-        point = MarkObject(row['name'], color, draw_mark, data, row['video name'])
+        draw_mark = np.array([float(row.get('x1', 0)), float(row.get('y1', 0)), float(row.get('width', 0)), float(row.get('height', 0)), float(row.get('video position', 0))])
+        data = self.data_tuple(None, row.get('time'), float(row.get('lat', 0)), float(row.get('lon', 0)),
+                               float(row.get('easting', 0)), float(row.get('northing', 0)), row.get('zone'),
+                               float(row.get('drone height', 0)), float(row.get('drone yaw', 0)), float(row.get('drone pitch', 0)), float(row.get('drone roll', 0)),
+                               float(row.get('drone lat', 0)), float(row.get('drone lon', 0)))
+        color = Gdk.RGBA(float(row.get('red', 1)), float(row.get('green', 0)), float(row.get('blue', 0)), float(row.get('alpha', 1)))
+        point = MarkObject(row.get('name'), color, draw_mark, data, row.get('video name'))
         self.grid_handler.add_marking_from_csv(point)
         self.markings['points'].append(point)
         self.update_draw_points()
