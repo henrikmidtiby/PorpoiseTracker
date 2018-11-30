@@ -18,7 +18,7 @@ class MouseDrawHandler:
         self.mouse_signals.connect('left_mouse_move', self.move)
         self.draw_handler = draw_handler
         self.draw_handler.str_func = self.print_drone_height
-        self.draw_handler.horizon = self.draw_horizon
+        self.draw_handler.horizon = None
         self.video_handler = video
         self.drone_log = drone_log
         self.fov = fov
@@ -76,12 +76,12 @@ class MouseDrawHandler:
         return world_points
 
     def pressed(self, event, x, y, width, height):
-        if self.video_handler.player_paused:
+        if self.video_handler.player_paused and self.allow_draw():
             self.last_pressed = np.array([x, y])
             self.size = (width, height)
 
     def released(self, event, x, y):
-        if self.video_handler.player_paused:
+        if self.video_handler.player_paused and self.allow_draw():
             dist = np.linalg.norm(self.last_pressed - np.array([x, y]))
             position = self.video_handler.get_position()
             if dist < 5:

@@ -42,7 +42,6 @@ class DroneLog:
             yield True
         progress_dialog.close()
         self.plot_log_data()
-        self.update_plot(0)
         self.show_warning_if_video_and_log_does_not_match()
         yield False
 
@@ -70,7 +69,6 @@ class DroneLog:
             yield True
         progress_dialog.close()
         self.plot_log_data()
-        self.update_plot(0)
         self.show_warning_if_video_and_log_does_not_match()
         yield False
 
@@ -192,6 +190,7 @@ class DroneLog:
     def plot_log_data(self):
         self.plot_win = PlotWindow()
         self.plot_win.plot(self.log_time_list, self.plot_list, self.video_list)
+        self.update_plot(0)
 
     def update_plot(self, time):
         if self.plot_win:
@@ -203,16 +202,28 @@ class PlotWindow(Gtk.Window):
         super().__init__(title="Yaw Pitch Roll Plot")
         self.f = Figure(figsize=(5, 4), dpi=100)
         self.canvas = FigureCanvas(self.f)
+        self.add(self.canvas)
         self.yaw_time = None
         self.pitch_time = None
         self.roll_time = None
         self.height_time = None
-        self.add(self.canvas)
+        self.start_time_stamp = None
+        self.video_list = None
+        self.show_all()
 
     def plot(self, time_stamps, data, video_list):
+        self.video_list = video_list
+        self.start_time_stamp = time_stamps[0]
         time = [t - time_stamps[0] for t in time_stamps]
         yaw, pitch, roll, height = zip(*data)
+        axarr = self.f.subplots(nrows=2, ncols=2)
+        self.plot_yaw(axarr, yaw, time)
+        self.plot_pitch(axarr, pitch, time)
+        self.plot_roll(axarr, roll, time)
+        self.plot_height(axarr, height, time)
 
+    @staticmethod
+    def shift_yaw(yaw):
         new_yaw = []
         last_point = 0
         shift = 0
@@ -225,10 +236,11 @@ class PlotWindow(Gtk.Window):
             new_point = point + shift
             last_point = point
             new_yaw.append(new_point)
+        return new_yaw
 
-        axarr = self.f.subplots(nrows=2, ncols=2)
-
-        for offset in range(-10*360, 10*360+1, 360):
+    def plot_yaw(self, axarr, yaw, time):
+        new_yaw = self.shift_yaw(yaw)
+        for offset in range(-10 * 360, 10 * 360 + 1, 360):
             yaw_with_offset = [x + offset for x in new_yaw]
             axarr[0, 0].plot(time, yaw_with_offset, 'blue')
         axarr[0, 0].set_ylim([-200, 200])
@@ -236,46 +248,47 @@ class PlotWindow(Gtk.Window):
         axarr[0, 0].set_xlabel('Seconds')
         axarr[0, 0].set_ylabel('Degrees')
         axarr[0, 0].xaxis.set_ticks(np.arange(0, time[-1], 60))
-        for video in video_list:
-            axarr[0, 0].fill_betweenx(y=[-220, 220], x1=video[0] - time_stamps[0], x2=video[1] - time_stamps[0], color='#bbbbbb')
+        for video in self.video_list:
+            axarr[0, 0].fill_betweenx(y=[-220, 220], x1=video[0] - self.start_time_stamp, x2=video[1] - self.start_time_stamp, color='#bbbbbb')
         self.yaw_time = axarr[0, 0].axvline(x=0, color='red', linewidth=2)
         axarr[0, 0].set_title('Yaw')
 
+    def plot_pitch(self, axarr, pitch, time):
         axarr[0, 1].plot(time, pitch, 'blue')
         axarr[0, 1].set_ylim([-100, 30])
         axarr[0, 1].set_xlim([0, time[-1]])
         axarr[0, 1].set_xlabel('Seconds')
         axarr[0, 1].set_ylabel('Degrees')
         axarr[0, 1].xaxis.set_ticks(np.arange(0, time[-1], 60))
-        for video in video_list:
-            axarr[0, 1].fill_betweenx(y=[-200, 200], x1=video[0] - time_stamps[0], x2=video[1] - time_stamps[0], color='#bbbbbb')
+        for video in self.video_list:
+            axarr[0, 1].fill_betweenx(y=[-200, 200], x1=video[0] - self.start_time_stamp, x2=video[1] - self.start_time_stamp, color='#bbbbbb')
         self.pitch_time = axarr[0, 1].axvline(x=0, color='red', linewidth=2)
         axarr[0, 1].set_title('Pitch')
 
+    def plot_roll(self, axarr, roll, time):
         axarr[1, 1].plot(time, roll, 'blue')
         axarr[1, 1].set_ylim([-180, 180])
         axarr[1, 1].set_xlim([0, time[-1]])
         axarr[1, 1].set_xlabel('Seconds')
         axarr[1, 1].set_ylabel('Degrees')
         axarr[1, 1].xaxis.set_ticks(np.arange(0, time[-1], 60))
-        for video in video_list:
-            axarr[1, 1].fill_betweenx(y=[-200, 200], x1=video[0] - time_stamps[0], x2=video[1] - time_stamps[0], color='#bbbbbb')
+        for video in self.video_list:
+            axarr[1, 1].fill_betweenx(y=[-200, 200], x1=video[0] - self.start_time_stamp, x2=video[1] - self.start_time_stamp, color='#bbbbbb')
         self.roll_time = axarr[1, 1].axvline(x=0, color='red', linewidth=2)
         axarr[1, 1].set_title('Roll')
 
+    def plot_height(self, axarr, height, time):
         axarr[1, 0].plot(time, height, 'blue')
         axarr[1, 0].set_xlim([0, time[-1]])
         axarr[1, 0].set_xlabel('Seconds')
         axarr[1, 0].set_ylabel('Meters')
         axarr[1, 0].xaxis.set_ticks(np.arange(0, time[-1], 60))
         ylim = axarr[1, 0].get_ylim()
-        for video in video_list:
-            axarr[1, 0].fill_betweenx(y=ylim, x1=video[0] - time_stamps[0], x2=video[1] - time_stamps[0], color='#bbbbbb')
+        for video in self.video_list:
+            axarr[1, 0].fill_betweenx(y=ylim, x1=video[0] - self.start_time_stamp, x2=video[1] - self.start_time_stamp, color='#bbbbbb')
         self.height_time = axarr[1, 0].axvline(x=0, color='red', linewidth=2)
         axarr[1, 0].set_ylim(ylim)
         axarr[1, 0].set_title('Height')
-
-        self.show_all()
 
     def update_plot(self, time):
         self.yaw_time.set_xdata(time)

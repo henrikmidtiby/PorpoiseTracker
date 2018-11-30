@@ -187,6 +187,13 @@ class PorpoiseTracker(Gtk.Application):
             string = 'All good to go!'
             self.grid_handler.update_status(string, 'ok')
 
+    def enable_draw_horizon_menu(self):
+        if self.allow_draw():
+            menu = ['_Toggle drawing Horizon']
+            self.enable_media_menu(menu, True)
+            self.draw_handler.horizon = self.mouse_draw.draw_horizon
+            self.video.emit_draw_signal()
+
     def on_open_video(self, *_):
         dialog = FileDialog(self.window, 'Choose a video', 'open')
         dialog.add_mime_filter('Video', 'video/quicktime')
@@ -210,7 +217,10 @@ class PorpoiseTracker(Gtk.Application):
         try:
             print("Opening video file: '%s'" % file)
             self.video.open_video(file)
-            self.enable_media_menu(self._media_menu, True)
+            media_menu_to_enable = self._media_menu
+            media_menu_to_enable.pop('_Toggle drawing Horizon')
+            self.enable_media_menu(media_menu_to_enable, True)
+            self.enable_draw_horizon_menu()
             self.video.playback_button.connect('clicked', self._enable_media_menu)
             self.drone_log.set_video_length(self.video.duration * 1e-9)
             self.menu.enable_menu_item('_Import drone log', True)
@@ -235,18 +245,26 @@ class PorpoiseTracker(Gtk.Application):
 
     def open_drone_log_from_file(self, log_file):
         self.drone_log.drone_log_data = {}
+        log_generator = self.open_drone_log_generator(log_file)
+        try:
+            print("Opening log file: '%s'" % log_file)
+            GLib.idle_add(log_generator.__next__)
+            self.drone_log_open = True
+            self.enable_draw_horizon_menu()
+            self.open_status()
+        except ValueError:
+            self.grid_handler.update_status('Error opening drone log', 'error')
+
+    def open_drone_log_generator(self, log_file):
         if log_file.endswith('.csv'):
             log_generator = self.drone_log.get_csv_log_generator(log_file, self.window)
         else:
             log_generator = self.drone_log.get_log_generator(log_file, self.window)
-        try:
-            print("Opening log file: '%s'" % log_file)
-            log_generator.__next__()
-            GLib.idle_add(log_generator.__next__)
-            self.drone_log_open = True
-            self.open_status()
-        except ValueError:
-            self.grid_handler.update_status('Error opening drone log', 'error')
+        yield True
+        for _ in log_generator:
+            yield True
+        self.video.emit_draw_signal()
+        yield False
 
     def on_import_fov(self, *_):
         dialog = FileDialog(self.window, 'Choose a FOV file', 'open')
@@ -262,6 +280,7 @@ class PorpoiseTracker(Gtk.Application):
             print("Opening fov file: '%s'" % fov_file)
             self.fov.set_fov_from_file(fov_file)
             self.fov_open = True
+            self.enable_draw_horizon_menu()
             self.open_status()
         except ValueError:
             self.grid_handler.update_status('Error opening FOV file', 'error')
