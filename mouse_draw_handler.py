@@ -2,6 +2,7 @@ from collections import defaultdict, namedtuple
 import numpy as np
 from tracked_object import MarkObject
 import csv
+import cv2
 import gi
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk
@@ -204,7 +205,7 @@ class MouseDrawHandler:
 
     def add_line_from_csv(self, row):
         draw_mark = np.array([float(row.get('x1', 0)), float(row.get('y1', 0)), float(row.get('x2', 0)), float(row.get('y2', 0)),
-                              float(row.get('width', 0)), float(row.get('height', 0)), float(row.get('video position', 0))])
+                              float(row.get('width', 0)), float(row.get('height', 0)), int(row.get('video position', 0))])
         data = self.data_tuple(float(row.get('length', 0)), row.get('time'), float(row.get('lat', 0)), float(row.get('lon', 0)),
                                float(row.get('easting', 0)), float(row.get('northing', 0)), row.get('zone'),
                                float(row.get('drone height', 0)), float(row.get('drone yaw', 0)), float(row.get('drone pitch', 0)), float(row.get('drone roll', 0)),
@@ -216,7 +217,7 @@ class MouseDrawHandler:
         self.update_draw_lines()
 
     def add_point_from_csv(self, row):
-        draw_mark = np.array([float(row.get('x1', 0)), float(row.get('y1', 0)), float(row.get('width', 0)), float(row.get('height', 0)), float(row.get('video position', 0))])
+        draw_mark = np.array([float(row.get('x1', 0)), float(row.get('y1', 0)), float(row.get('width', 0)), float(row.get('height', 0)), int(row.get('video position', 0))])
         data = self.data_tuple(None, row.get('time'), float(row.get('lat', 0)), float(row.get('lon', 0)),
                                float(row.get('easting', 0)), float(row.get('northing', 0)), row.get('zone'),
                                float(row.get('drone height', 0)), float(row.get('drone yaw', 0)), float(row.get('drone pitch', 0)), float(row.get('drone roll', 0)),
@@ -226,4 +227,43 @@ class MouseDrawHandler:
         self.grid_handler.add_marking_from_csv(point)
         self.markings['points'].append(point)
         self.update_draw_points()
+
+    def export_video_gen(self, video_input_file, video_export_file):
+        cap = cv2.VideoCapture(video_input_file)
+        frame_rate = cap.get(cv2.CAP_PROP_FPS)
+        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_num = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        out = cv2.VideoWriter(video_export_file, fourcc, frame_rate, (frame_width, frame_height))
+        yield frame_num
+        while cap.isOpened():
+            pos = int(cap.get(cv2.CAP_PROP_POS_MSEC) * 1e6)
+            ret, frame = cap.read()
+            if ret:
+                new_frame = frame.copy()
+                for point in self.markings['points']:
+                    if int(point.marking[-1]) == pos:
+                        scale_width = frame_width / point.marking[2]
+                        scale_height = frame_height / point.marking[3]
+                        center = (int(point.marking[0]*scale_width), int(point.marking[1]*scale_height))
+                        color = (int(point.color.green*255), int(point.color.blue*255), int(point.color.red*255))
+                        cv2.circle(new_frame, center, 10, color, -1)
+                for line in self.markings['lines']:
+                    if int(line.marking[-1]) == pos:
+                        scale_width = frame_width / line.marking[4]
+                        scale_height = frame_height / line.marking[5]
+                        point1 = (int(line.marking[0]*scale_width), int(line.marking[1]*scale_height))
+                        point2 = (int(line.marking[2]*scale_width), int(line.marking[3]*scale_height))
+                        color = (int(line.color.green * 255), int(line.color.blue * 255), int(line.color.red * 255))
+                        cv2.line(new_frame, point1, point2, color, 5)
+                out.write(new_frame)
+            else:
+                break
+            yield True
+        cap.release()
+        out.release()
+        yield False
+
+
 

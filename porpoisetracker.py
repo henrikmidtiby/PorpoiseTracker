@@ -6,7 +6,7 @@ import argparse
 import shutil
 from collections import OrderedDict
 from gtk_modules import Menu, Video, VideoDrawHandler, Mouse
-from gtk_modules.dialogs import FileDialog, Dialog
+from gtk_modules.dialogs import FileDialog, Dialog, ProgressDialog
 from mouse_draw_handler import MouseDrawHandler
 from tracker_grid_handler import GridHandler
 from drone_log import DroneLog
@@ -38,6 +38,7 @@ class PorpoiseTracker(Gtk.Application):
                                            self.drone_log, self.fov, self.grid_handler, self.allow_draw)
         self.window = None
         self.save_file = None
+        self.video_file = None
         self.video_open = False
         self.drone_log_open = False
         self.fov_open = False
@@ -199,10 +200,9 @@ class PorpoiseTracker(Gtk.Application):
         dialog.add_mime_filter('Video', 'video/quicktime')
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
-            file = dialog.get_filename()
+            self.video_file = dialog.get_filename()
             dialog.destroy()
-            self.open_video_from_file(file)
-
+            self.open_video_from_file(self.video_file)
         else:
             dialog.destroy()
 
@@ -336,7 +336,27 @@ class PorpoiseTracker(Gtk.Application):
             dialog.destroy()
 
     def on_export_video(self, *_):
-        pass
+        dialog = FileDialog(self.window, 'Save as', 'save', 'untitled.avi')
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            video_export_file = dialog.get_filename()
+            print("Exporting video file: '%s' to file: '%s" % (self.video_file, video_export_file))
+            video_export_generator = self.export_video_gen(self.window, self.video_file, video_export_file)
+            GLib.idle_add(video_export_generator.__next__)
+            dialog.destroy()
+        else:
+            dialog.destroy()
+
+    def export_video_gen(self, window, video_file, video_export_file):
+        video_export_generator = self.mouse_draw.export_video_gen(video_file, video_export_file)
+        num_frame = next(video_export_generator)
+        progress_dialog = ProgressDialog(window, 'Exporting Video', num_frame)
+        progress_dialog.show()
+        progress_update_generator = progress_dialog.update_progress()
+        for _ in zip(progress_update_generator, video_export_generator):
+            yield True
+        progress_dialog.close()
+        yield False
 
     def on_open_annotations(self, *_):
         dialog = FileDialog(self.window, 'Choose a annotations csv file', 'open')
@@ -420,8 +440,8 @@ class PorpoiseTracker(Gtk.Application):
         parser.add_argument('--annotations', type=str, help='Open annotations file')
         args = parser.parse_args()
         if args.video:
-            video_file = os.path.abspath(args.video)
-            self.open_video_from_file(video_file)
+            self.video_file = os.path.abspath(args.video)
+            self.open_video_from_file(self.video_file)
         if args.fov:
             self.open_fov_file(args.fov)
         if args.cam:
