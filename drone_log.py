@@ -4,8 +4,7 @@ import subprocess
 import csv
 import numpy as np
 from datetime import datetime
-import logging
-from matplotlib.backends.backend_gtk3agg import (FigureCanvasGTK3Agg as FigureCanvas)
+from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg as FigureCanvas
 from matplotlib.figure import Figure
 from gtk_modules.dialogs import ProgressDialog
 import gi
@@ -15,7 +14,6 @@ from gi.repository import Gtk
 
 class DroneLog:
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
         self.log_file = None
         self.drone_log_data = {}
         self.log_time_list = []
@@ -90,10 +88,10 @@ class DroneLog:
         if sys.platform == 'linux':
             cmd = 'wine drone_log/TXTlogToCSVtool "' + log_file + '" "' + path + '"'
         else:
-            cmd = 'drone_log\TXTlogToCSVtool "' + log_file + '" "' + path + '"'
+            cmd = 'drone_log\\TXTlogToCSVtool "' + log_file + '" "' + path + '"'
         self.log_file = log_file
         res = subprocess.call(cmd, shell=True)
-        self.logger.info('subprocess results {}'.format(res))
+        print('subprocess results {}'.format(res))
 
     @staticmethod
     def remove_null_bytes(log):
