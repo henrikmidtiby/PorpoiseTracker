@@ -309,6 +309,7 @@ class PorpoiseTracker(Gtk.Application):
         adjustment = Gtk.Adjustment(0, 0, 1000, 1, 1, 0)
         spinner = Gtk.SpinButton()
         spinner.set_adjustment(adjustment)
+        spinner.set_value(self.drone_log.height_difference)
         dialog.box.add(spinner)
         dialog.show_all()
         response = dialog.run()
