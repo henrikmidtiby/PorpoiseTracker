@@ -306,9 +306,10 @@ class PorpoiseTracker(Gtk.Application):
 
     def on_change_start_height(self, *_):
         dialog = Dialog(self.window, 'Start height in meters', 'cancel_ok')
-        adjustment = Gtk.Adjustment(0, 0, 1000, 1, 1, 0)
+        adjustment = Gtk.Adjustment(0.0, 0.0, 1000.0, 0.5, 0.5, 1.0)
         spinner = Gtk.SpinButton()
         spinner.set_adjustment(adjustment)
+        spinner.set_digits(2)
         spinner.set_value(self.drone_log.height_difference)
         dialog.box.add(spinner)
         dialog.show_all()
