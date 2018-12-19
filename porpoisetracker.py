@@ -79,6 +79,7 @@ class PorpoiseTracker(Gtk.Application):
         self._file_menu.update({'_Open annotations': ('open-annotations', '&lt;Primary&gt;&lt;shift&gt;o', self.on_open_annotations)})
         self._file_menu.update({'_Change start height': ('change-start-height', None, self.on_change_start_height)})
         self._file_menu.update({'_Change video start time': ('change-video-start-time', None, self.on_change_video_start_time, False)})
+        self._file_menu.update({'_Open drone log plot window': ('open-drone-log-plot', None, self.on_open_drone_log_plot, False)})
         self._file_menu.update({'separator2': None})
         self._file_menu.update({'_Save': ('save', '&lt;Primary&gt;s', self.on_save)})
         self._file_menu.update({'_Save as': ('save-as', '&lt;Primary&gt;&lt;shift&gt;s', self.on_save_as)})
@@ -253,6 +254,7 @@ class PorpoiseTracker(Gtk.Application):
             self.drone_log_open = True
             self.enable_draw_horizon_menu()
             self.enable_media_menu(['_Change video start time'], True)
+            self.enable_media_menu(['_Open drone log plot window'], True)
             self.open_status()
         except ValueError:
             self.grid_handler.update_status('Error opening drone log', 'error')
@@ -337,6 +339,13 @@ class PorpoiseTracker(Gtk.Application):
             video_start_time = spinner.get_value()
             self.drone_log.update_video_start_time(video_start_time)
         dialog.destroy()
+
+    def on_open_drone_log_plot(self, *_):
+        if self.drone_log.plot_win:
+            if not self.drone_log.plot_win.window_closed:
+                self.drone_log.plot_win.present()
+                return
+        self.drone_log.plot_log_data()
 
     def on_save(self, *_):
         if self.save_file is not None:

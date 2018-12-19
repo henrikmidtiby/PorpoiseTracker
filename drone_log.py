@@ -224,6 +224,8 @@ class PlotWindow(Gtk.Window):
 
     def __init__(self):
         super().__init__(title="Yaw Pitch Roll Plot")
+        self.window_closed = False
+        self.connect('destroy', self.on_destroy)
         self.f = Figure(figsize=(5, 4), dpi=100)
         self.canvas = FigureCanvas(self.f)
         self.f.canvas.mpl_connect('pick_event', self.on_pick)
@@ -242,6 +244,9 @@ class PlotWindow(Gtk.Window):
         self.start_time_stamp = None
         self.video_list = None
         self.show_all()
+
+    def on_destroy(self, *_):
+        self.window_closed = True
 
     def plot(self, time_stamps, data, video_list):
         self.video_list = video_list
