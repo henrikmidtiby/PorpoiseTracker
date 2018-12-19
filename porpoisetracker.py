@@ -78,6 +78,7 @@ class PorpoiseTracker(Gtk.Application):
         self._file_menu.update({'_Import camera params': ('import-camera-params', '&lt;Primary&gt;l', self.on_import_camera_params)})
         self._file_menu.update({'_Open annotations': ('open-annotations', '&lt;Primary&gt;&lt;shift&gt;o', self.on_open_annotations)})
         self._file_menu.update({'_Change start height': ('change-start-height', None, self.on_change_start_height)})
+        self._file_menu.update({'_Change video start time': ('change-video-start-time', None, self.on_change_video_start_time, False)})
         self._file_menu.update({'separator2': None})
         self._file_menu.update({'_Save': ('save', '&lt;Primary&gt;s', self.on_save)})
         self._file_menu.update({'_Save as': ('save-as', '&lt;Primary&gt;&lt;shift&gt;s', self.on_save_as)})
@@ -251,6 +252,7 @@ class PorpoiseTracker(Gtk.Application):
             GLib.idle_add(log_generator.__next__)
             self.drone_log_open = True
             self.enable_draw_horizon_menu()
+            self.enable_media_menu(['_Change video start time'], True)
             self.open_status()
         except ValueError:
             self.grid_handler.update_status('Error opening drone log', 'error')
@@ -317,9 +319,24 @@ class PorpoiseTracker(Gtk.Application):
         if response == Gtk.ResponseType.OK:
             start_height = spinner.get_value()
             self.drone_log.height_difference = start_height
-            dialog.destroy()
-        else:
-            dialog.destroy()
+        dialog.destroy()
+
+    def on_change_video_start_time(self, *_):
+        log_length = self.drone_log.log_time_list[-1] - self.drone_log.log_time_list[0]
+        video_start_time_in = self.drone_log.video_start_time - self.drone_log.log_time_list[0]
+        dialog = Dialog(self.window, 'Video start time in log (s)', 'cancel_ok')
+        adjustment = Gtk.Adjustment(video_start_time_in, 0.0, log_length, 1.0, 1.0, 1.0)
+        spinner = Gtk.SpinButton()
+        spinner.set_adjustment(adjustment)
+        spinner.set_digits(1)
+        spinner.set_value(video_start_time_in)
+        dialog.box.add(spinner)
+        dialog.show_all()
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            video_start_time = spinner.get_value()
+            self.drone_log.update_video_start_time(video_start_time)
+        dialog.destroy()
 
     def on_save(self, *_):
         if self.save_file is not None:

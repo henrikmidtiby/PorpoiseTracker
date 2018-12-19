@@ -3,13 +3,15 @@ import sys
 import subprocess
 import csv
 import numpy as np
+from itertools import product
 from datetime import datetime
+from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3
 from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg as FigureCanvas
 from matplotlib.figure import Figure
 from gtk_modules.dialogs import ProgressDialog
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject
 
 
 class DroneLog:
@@ -20,10 +22,10 @@ class DroneLog:
         self.video_list = []
         self.plot_list = []
         self.video_start_time = None
-        self.video_length_difference_to_logfile = None
+        self.video_length_difference_to_logfile = 10
         self.plot_win = None
         self.height_difference = 0
-        self.video_length = None
+        self.video_length = 0
 
     def set_video_length(self, video_length):
         self.video_length = video_length
@@ -48,6 +50,7 @@ class DroneLog:
     def parse_csv_log_generator(self, log_file):
         yield True
         self.parse_log(log=log_file)
+        self.get_video_start_time()
         yield False
 
     def parse_log_generator(self, log_file):
@@ -159,11 +162,11 @@ class DroneLog:
         """
         keep_diff = np.inf
         video_start_time = 0
+        print("\n    video length: %f" % self.video_length)
         for recording in self.video_list:
             recording_length = recording[1] - recording[0]
             diff = abs(recording_length - self.video_length)
-            print("video length: %f\n" % self.video_length)
-            print("recording length: %f\n" % recording_length)
+            print("recording length: %f" % recording_length)
             if diff < keep_diff:
                 video_start_time = recording[0]
                 keep_diff = diff
@@ -189,20 +192,49 @@ class DroneLog:
 
     def plot_log_data(self):
         self.plot_win = PlotWindow()
+        self.plot_win.connect('click_on_plot', self._update_video_start_time)
         self.plot_win.plot(self.log_time_list, self.plot_list, self.video_list)
+        self.plot_win.update_video_length_plot(self.video_start_time - self.log_time_list[0], self.video_length)
         self.update_plot(0)
 
     def update_plot(self, time):
         if self.plot_win:
             self.plot_win.update_plot(time + self.video_start_time - self.log_time_list[0])
 
+    def update_video_start_time(self, video_start_time):
+        self._update_video_start_time(None, video_start_time)
+
+    def _update_video_start_time(self, _, video_start_time):
+        self.video_start_time = video_start_time + self.log_time_list[0]
+        if self.plot_win:
+            self.plot_win.update_video_length_plot(video_start_time, self.video_length)
+            self.update_plot(0)
+
+
+class NavigationToolbar(NavigationToolbar2GTK3):
+    # only display the buttons we need
+    toolitems = [t for t in NavigationToolbar2GTK3.toolitems if
+                 t[0] in ('Home', 'Zoom', 'Save')]
+
 
 class PlotWindow(Gtk.Window):
+    __gsignals__ = {
+        'click_on_plot': (GObject.SIGNAL_RUN_FIRST, None, (float,))
+    }
+
     def __init__(self):
         super().__init__(title="Yaw Pitch Roll Plot")
         self.f = Figure(figsize=(5, 4), dpi=100)
         self.canvas = FigureCanvas(self.f)
-        self.add(self.canvas)
+        self.f.canvas.mpl_connect('pick_event', self.on_pick)
+        vbox = Gtk.VBox()
+        self.add(vbox)
+        vbox.pack_start(self.canvas, True, True, 0)
+        toolbar = NavigationToolbar(self.canvas, self)
+        vbox.pack_start(toolbar, False, False, 0)
+        self.set_size_request(750, 600)
+        self.axarr = None
+        self.video_length_plots = [None]*4
         self.yaw_time = None
         self.pitch_time = None
         self.roll_time = None
@@ -216,11 +248,11 @@ class PlotWindow(Gtk.Window):
         self.start_time_stamp = time_stamps[0]
         time = [t - time_stamps[0] for t in time_stamps]
         yaw, pitch, roll, height = zip(*data)
-        axarr = self.f.subplots(nrows=2, ncols=2)
-        self.plot_yaw(axarr, yaw, time)
-        self.plot_pitch(axarr, pitch, time)
-        self.plot_roll(axarr, roll, time)
-        self.plot_height(axarr, height, time)
+        self.axarr = self.f.subplots(nrows=2, ncols=2)
+        self.plot_yaw(self.axarr, yaw, time)
+        self.plot_pitch(self.axarr, pitch, time)
+        self.plot_roll(self.axarr, roll, time)
+        self.plot_height(self.axarr, height, time)
 
     @staticmethod
     def shift_yaw(yaw):
@@ -249,7 +281,7 @@ class PlotWindow(Gtk.Window):
         axarr[0, 0].set_ylabel('Degrees')
         axarr[0, 0].xaxis.set_ticks(np.arange(0, time[-1], 60))
         for video in self.video_list:
-            axarr[0, 0].fill_betweenx(y=[-220, 220], x1=video[0] - self.start_time_stamp, x2=video[1] - self.start_time_stamp, color='#bbbbbb')
+            axarr[0, 0].axvspan(xmin=video[0] - self.start_time_stamp, xmax=video[1] - self.start_time_stamp, color='#bbbbbb', picker=1)
         self.yaw_time = axarr[0, 0].axvline(x=0, color='red', linewidth=2)
         axarr[0, 0].set_title('Yaw')
 
@@ -261,7 +293,7 @@ class PlotWindow(Gtk.Window):
         axarr[0, 1].set_ylabel('Degrees')
         axarr[0, 1].xaxis.set_ticks(np.arange(0, time[-1], 60))
         for video in self.video_list:
-            axarr[0, 1].fill_betweenx(y=[-200, 200], x1=video[0] - self.start_time_stamp, x2=video[1] - self.start_time_stamp, color='#bbbbbb')
+            axarr[0, 1].axvspan(xmin=video[0] - self.start_time_stamp, xmax=video[1] - self.start_time_stamp, color='#bbbbbb', picker=1)
         self.pitch_time = axarr[0, 1].axvline(x=0, color='red', linewidth=2)
         axarr[0, 1].set_title('Pitch')
 
@@ -273,7 +305,7 @@ class PlotWindow(Gtk.Window):
         axarr[1, 1].set_ylabel('Degrees')
         axarr[1, 1].xaxis.set_ticks(np.arange(0, time[-1], 60))
         for video in self.video_list:
-            axarr[1, 1].fill_betweenx(y=[-200, 200], x1=video[0] - self.start_time_stamp, x2=video[1] - self.start_time_stamp, color='#bbbbbb')
+            axarr[1, 1].axvspan(xmin=video[0] - self.start_time_stamp, xmax=video[1] - self.start_time_stamp, color='#bbbbbb', picker=1)
         self.roll_time = axarr[1, 1].axvline(x=0, color='red', linewidth=2)
         axarr[1, 1].set_title('Roll')
 
@@ -285,7 +317,7 @@ class PlotWindow(Gtk.Window):
         axarr[1, 0].xaxis.set_ticks(np.arange(0, time[-1], 60))
         ylim = axarr[1, 0].get_ylim()
         for video in self.video_list:
-            axarr[1, 0].fill_betweenx(y=ylim, x1=video[0] - self.start_time_stamp, x2=video[1] - self.start_time_stamp, color='#bbbbbb')
+            axarr[1, 0].axvspan(xmin=video[0] - self.start_time_stamp, xmax=video[1] - self.start_time_stamp, color='#bbbbbb', picker=1)
         self.height_time = axarr[1, 0].axvline(x=0, color='red', linewidth=2)
         axarr[1, 0].set_ylim(ylim)
         axarr[1, 0].set_title('Height')
@@ -297,4 +329,14 @@ class PlotWindow(Gtk.Window):
         self.height_time.set_xdata(time)
         self.canvas.draw()
         self.canvas.flush_events()
+
+    def update_video_length_plot(self, video_start, video_length):
+        for plot in self.video_length_plots:
+            if plot:
+                plot.remove()
+        self.video_length_plots = [self.axarr[x, y].axvspan(xmin=video_start, xmax=video_start + video_length, ymin=0, ymax=0.1, color='#99ff99') for x, y in product(range(2), range(2))]
+
+    def on_pick(self, event):
+        video_start = np.min(event.artist.get_xy(), axis=0)[0]
+        self.emit('click_on_plot', video_start)
 
