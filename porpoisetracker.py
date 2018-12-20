@@ -1,10 +1,12 @@
 import os
+import re
 import sys
 if sys.platform == 'win32':
     os.environ['GST_PLUGIN_PATH'] = './;./gst-plugins'
 import argparse
 import shutil
 from collections import OrderedDict
+import ffmpeg
 from gtk_modules import Menu, Video, VideoDrawHandler, Mouse
 from gtk_modules.dialogs import FileDialog, Dialog, ProgressDialog
 from mouse_draw_handler import MouseDrawHandler
@@ -211,23 +213,29 @@ class PorpoiseTracker(Gtk.Application):
     def open_video_from_file(self, file):
         if sys.platform == 'win32':
             path_as_list = file.split('\\')
-            file = ''
+            file2 = ''
             for p in path_as_list:
-                file += '/' + p.replace(' ', '\\ ')
+                file2 += '/' + p.replace(' ', '\\ ')
         else:
-            file = file.replace(' ', '\\ ')
+            file2 = file.replace(' ', '\\ ')
         try:
-            print("Opening video file: '%s'" % file)
-            self.video.open_video(file)
+            print("Opening video file: '%s'" % file2)
+            self.video.open_video(file2)
             media_menu_to_enable = self._media_menu
             media_menu_to_enable.pop('_Toggle drawing Horizon')
             self.enable_media_menu(media_menu_to_enable, True)
             self.enable_draw_horizon_menu()
             self.video.playback_button.connect('clicked', self._enable_media_menu)
             self.drone_log.set_video_length(self.video.duration * 1e-9)
+            video_location_string = ffmpeg.probe(file)['format']['tags']['location']
+            match = re.match(r'([-+]\d+.\d+)([-+]\d+.\d+)([-+]\d+.\d+)', video_location_string)
+            if match:
+                lat = float(match.group(1))
+                lon = float(match.group(2))
+                self.drone_log.video_lat_lon = (lat, lon)
             self.menu.enable_menu_item('_Import drone log', True)
             self.menu.enable_menu_item('_Export video', True)
-            self.mouse_draw.video = file
+            self.mouse_draw.video = file2
             self.video_open = True
             self.open_status()
         except AttributeError:

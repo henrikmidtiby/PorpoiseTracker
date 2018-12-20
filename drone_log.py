@@ -22,6 +22,7 @@ class DroneLog:
         self.video_list = []
         self.plot_list = []
         self.video_start_time = None
+        self.video_lat_lon = None
         self.video_length_difference_to_logfile = 10
         self.plot_win = None
         self.height_difference = 0
@@ -158,15 +159,22 @@ class DroneLog:
         
         Iterate through all recordings in the log file and
         locate the recording with a duration similar to the
-        length of the loaded video.
+        length of the loaded video or a location.
         """
         keep_diff = np.inf
         video_start_time = 0
-        print("\n    video length: %f" % self.video_length)
+        print('\n      video length: %f' % self.video_length)
+        if self.video_lat_lon is not None:
+            print('    Video location: (%f, %f)' % (self.video_lat_lon[0], self.video_lat_lon[1]))
         for recording in self.video_list:
-            recording_length = recording[1] - recording[0]
-            diff = abs(recording_length - self.video_length)
-            print("recording length: %f" % recording_length)
+            if self.video_lat_lon:
+                _, _, pos, _ = self.drone_log_data[recording[0]]
+                diff = abs(pos[0] - self.video_lat_lon[0]) + abs(pos[1] - self.video_lat_lon[1])
+                print('recording location: (%f, %f)' % (pos[0], pos[1]))
+            else:
+                recording_length = recording[1] - recording[0]
+                diff = abs(recording_length - self.video_length)
+                print('  recording length: %f' % recording_length)
             if diff < keep_diff:
                 video_start_time = recording[0]
                 keep_diff = diff
