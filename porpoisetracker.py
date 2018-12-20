@@ -216,8 +216,10 @@ class PorpoiseTracker(Gtk.Application):
             file2 = ''
             for p in path_as_list:
                 file2 += '/' + p.replace(' ', '\\ ')
+            cmd = '.\\lib\\ffprobe'
         else:
             file2 = file.replace(' ', '\\ ')
+            cmd = 'ffprobe'
         try:
             print("Opening video file: '%s'" % file2)
             self.video.open_video(file2)
@@ -227,7 +229,7 @@ class PorpoiseTracker(Gtk.Application):
             self.enable_draw_horizon_menu()
             self.video.playback_button.connect('clicked', self._enable_media_menu)
             self.drone_log.set_video_length(self.video.duration * 1e-9)
-            video_location_string = ffmpeg.probe(file)['format']['tags']['location']
+            video_location_string = ffmpeg.probe(file, cmd=cmd)['format']['tags']['location']
             match = re.match(r'([-+]\d+.\d+)([-+]\d+.\d+)([-+]\d+.\d+)', video_location_string)
             if match:
                 lat = float(match.group(1))
