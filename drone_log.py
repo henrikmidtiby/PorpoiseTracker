@@ -21,7 +21,7 @@ class DroneLog:
         self.log_time_list = []
         self.video_list = []
         self.plot_list = []
-        self.video_start_time = None
+        self.video_start_time = 0
         self.video_lat_lon = None
         self.video_length_difference_to_logfile = 10
         self.plot_win = None
@@ -45,20 +45,17 @@ class DroneLog:
             yield True
         progress_dialog.close()
         self.plot_log_data()
-        self.show_warning_if_video_and_log_does_not_match()
         yield False
 
     def parse_csv_log_generator(self, log_file):
         yield True
         self.parse_log(log=log_file)
-        self.get_video_start_time()
         yield False
 
     def parse_log_generator(self, log_file):
         self.convert_log(log_file)
         yield True
         self.parse_log()
-        self.get_video_start_time()
         yield False
 
     def get_log_generator(self, log_file, window):
@@ -73,7 +70,6 @@ class DroneLog:
             yield True
         progress_dialog.close()
         self.plot_log_data()
-        self.show_warning_if_video_and_log_does_not_match()
         yield False
 
     def show_warning_if_video_and_log_does_not_match(self):
@@ -87,13 +83,14 @@ class DroneLog:
 
     def convert_log(self, log_file):
         path = os.path.join('temp', 'drone_log.csv')
+        if os.path.isfile(path):
+            os.remove(path)
         if sys.platform == 'linux':
             cmd = 'wine drone_log/TXTlogToCSVtool "' + log_file + '" "' + path + '"'
         else:
             cmd = 'drone_log\\TXTlogToCSVtool "' + log_file + '" "' + path + '"'
         self.log_file = log_file
-        res = subprocess.call(cmd, shell=True)
-        print('subprocess results {}'.format(res))
+        subprocess.call(cmd, shell=True)
 
     @staticmethod
     def remove_null_bytes(log):
@@ -103,6 +100,10 @@ class DroneLog:
             fo.write(data.replace(b'\x00', b''))
 
     def parse_log(self, log=None):
+        self.drone_log_data = {}
+        self.log_time_list = []
+        self.video_list = []
+        self.plot_list = []
         if log is None:
             log = os.path.join('temp', 'drone_log.csv')
         self.remove_null_bytes(log)
@@ -180,6 +181,7 @@ class DroneLog:
                 keep_diff = diff
         self.video_start_time = video_start_time
         self.video_length_difference_to_logfile = keep_diff
+        self.show_warning_if_video_and_log_does_not_match()
 
     def get_data(self, time):
         diff = np.Inf
@@ -202,6 +204,9 @@ class DroneLog:
         self.plot_win = PlotWindow()
         self.plot_win.connect('click_on_plot', self._update_video_start_time)
         self.plot_win.plot(self.log_time_list, self.plot_list, self.video_list)
+        self.update_video_plot()
+
+    def update_video_plot(self):
         self.plot_win.update_video_length_plot(self.video_start_time - self.log_time_list[0], self.video_length)
         self.update_plot(0)
 

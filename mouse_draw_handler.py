@@ -151,7 +151,8 @@ class MouseDrawHandler:
     def update_draw_points(self):
         points = []
         for p in self.markings['points']:
-            points.append([p.marking, p.color, p.hide])
+            if p.video == self.video:
+                points.append([p.marking, p.color, p.hide])
         self.draw_handler.points = points
 
     def update_draw_lines(self):

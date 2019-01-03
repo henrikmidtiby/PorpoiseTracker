@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+
 if sys.platform == 'win32':
     os.environ['GST_PLUGIN_PATH'] = './;./gst-plugins'
 import argparse
@@ -14,6 +15,7 @@ from tracker_grid_handler import GridHandler
 from drone_log import DroneLog
 from fov import Fov
 import gi
+
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio, GLib
 
@@ -75,7 +77,7 @@ class PorpoiseTracker(Gtk.Application):
         self._file_menu.update({'_Preferences': ('preferences', '&lt;Primary&gt;p', self.on_preferences)})
         self._file_menu.update({'separator1': None})
         self._file_menu.update({'_Open video': ('open-video', '&lt;Primary&gt;o', self.on_open_video)})
-        self._file_menu.update({'_Import drone log': ('import-drone-log', '&lt;Primary&gt;i', self.on_import_drone_log, False)})
+        self._file_menu.update({'_Import drone log': ('import-drone-log', '&lt;Primary&gt;i', self.on_import_drone_log)})
         self._file_menu.update({'_Import fov': ('import-fov', '&lt;Primary&gt;&lt;shift&gt;i', self.on_import_fov)})
         self._file_menu.update({'_Import camera params': ('import-camera-params', '&lt;Primary&gt;l', self.on_import_camera_params)})
         self._file_menu.update({'_Open annotations': ('open-annotations', '&lt;Primary&gt;&lt;shift&gt;o', self.on_open_annotations)})
@@ -223,7 +225,7 @@ class PorpoiseTracker(Gtk.Application):
         try:
             print("Opening video file: '%s'" % file2)
             self.video.open_video(file2)
-            media_menu_to_enable = self._media_menu
+            media_menu_to_enable = self._media_menu.copy()
             media_menu_to_enable.pop('_Toggle drawing Horizon')
             self.enable_media_menu(media_menu_to_enable, True)
             self.enable_draw_horizon_menu()
@@ -235,10 +237,12 @@ class PorpoiseTracker(Gtk.Application):
                 lat = float(match.group(1))
                 lon = float(match.group(2))
                 self.drone_log.video_lat_lon = (lat, lon)
-            self.menu.enable_menu_item('_Import drone log', True)
             self.menu.enable_menu_item('_Export video', True)
             self.mouse_draw.video = file2
             self.video_open = True
+            if self.drone_log_open:
+                self.drone_log.get_video_start_time()
+                self.drone_log.update_video_plot()
             self.open_status()
         except AttributeError:
             self.grid_handler.update_status('Error opening video', 'error')
@@ -256,18 +260,28 @@ class PorpoiseTracker(Gtk.Application):
             dialog.destroy()
 
     def open_drone_log_from_file(self, log_file):
-        self.drone_log.drone_log_data = {}
-        log_generator = self.open_drone_log_generator(log_file)
         try:
             print("Opening log file: '%s'" % log_file)
-            GLib.idle_add(log_generator.__next__)
+            self.open_drone_log(log_file)
             self.drone_log_open = True
+            if self.video_open:
+                self.drone_log.get_video_start_time()
+                self.drone_log.update_video_plot()
             self.enable_draw_horizon_menu()
             self.enable_media_menu(['_Change video start time'], True)
             self.enable_media_menu(['_Open drone log plot window'], True)
             self.open_status()
-        except ValueError:
+        except (ValueError, IndexError):
             self.grid_handler.update_status('Error opening drone log', 'error')
+
+    def open_drone_log(self, log_file):
+        if log_file.endswith('.csv'):
+            self.drone_log.parse_log(log_file)
+        else:
+            self.drone_log.convert_log(log_file)
+            self.drone_log.parse_log()
+        self.drone_log.plot_log_data()
+        self.video.emit_draw_signal()
 
     def open_drone_log_generator(self, log_file):
         if log_file.endswith('.csv'):
