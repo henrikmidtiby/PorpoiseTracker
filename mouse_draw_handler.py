@@ -158,7 +158,8 @@ class MouseDrawHandler:
     def update_draw_lines(self):
         lines = []
         for l in self.markings['lines']:
-            lines.append([l.marking, l.color, l.hide])
+            if l.video == self.video:
+                lines.append([l.marking, l.color, l.hide])
         self.draw_handler.lines = lines
 
     def move(self, event, x, y):

@@ -103,7 +103,7 @@ class PorpoiseTracker(Gtk.Application):
         self.window.set_title('Porpoise Measure')
         self.window.set_application(self)
         self.window.connect('delete_event', self.on_quit)
-        self.window.set_size_request(700, 500)
+        self.window.set_size_request(800, 600)
         self.grid_handler.window = self.window
         vertical_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         vertical_box.pack_start(self.video.scrolled_window, True, True, 0)
@@ -243,6 +243,7 @@ class PorpoiseTracker(Gtk.Application):
             if self.drone_log_open:
                 self.drone_log.get_video_start_time()
                 self.drone_log.update_video_plot()
+            self.grid_handler.on_open_video(self.video_file.split(os.sep)[-1])
             self.open_status()
         except AttributeError:
             self.grid_handler.update_status('Error opening video', 'error')

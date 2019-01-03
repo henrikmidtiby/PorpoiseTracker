@@ -7,17 +7,20 @@ from gi.repository import Gtk, Gdk, GObject
 class GridHandler:
     def __init__(self, jump_to_frame_func):
         self.jump_to_frame_func = jump_to_frame_func
+        self.current_video_iter = None
+        self.current_video = None
+        self.video_dict = {}
         self.remove_marking_func = None
         self.update_draw_markings_func = None
         self.current_selection = None
         self.current_iter = None
         self.current_name = None
-        self.current_path = None
+        self.current_path = ''
         self.color = Gdk.RGBA(1, 0, 0, 1)
         self.window = None
         self.vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.scrolled_window = Gtk.ScrolledWindow()
-        self.scrolled_window.set_size_request(280, 100)
+        self.scrolled_window.set_size_request(350, 100)
         self.scrolled_window.set_vexpand(True)
         self.toolbar = Gtk.Toolbar()
         self.toolbar.set_property('icon_size', 1)
@@ -57,6 +60,7 @@ class GridHandler:
         self.tree_store = Gtk.TreeStore(str, str, str, bool, object, Gdk.RGBA.__gtype__)
         self.tree_view = Gtk.TreeView.new_with_model(self.tree_store)
         self.tree_select = self.tree_view.get_selection()
+        self.tree_select.set_select_function(self.selection_function)
         self.tree_select.set_mode(Gtk.SelectionMode.BROWSE)
         self.tree_select.connect('changed', self.on_tree_change)
         self.color_renderer = Gtk.CellRendererText()
@@ -65,8 +69,10 @@ class GridHandler:
         self.text_renderer = Gtk.CellRendererText()
         self.text_name_renderer = Gtk.CellRendererText()
         self.text_renderer.set_alignment(1, 1)
-        self.name_column = Gtk.TreeViewColumn('Name', self.text_name_renderer, text=0)
+        self.name_column = Gtk.TreeViewColumn('Video/Name', self.text_name_renderer, text=0)
         self.name_column.set_expand(True)
+        self.name_column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        self.name_column.set_resizable(True)
         self.tree_view.append_column(self.name_column)
         self.time_column = Gtk.TreeViewColumn('Time', self.text_renderer, text=1)
         self.tree_view.append_column(self.time_column)
@@ -77,9 +83,30 @@ class GridHandler:
         self.hide_column = Gtk.TreeViewColumn('Hide', self.toggle_renderer, active=3)
         self.tree_view.append_column(self.hide_column)
         self.scrolled_window.add(self.tree_view)
-        tree_iter = self.tree_store.append(None, ['Doodles', '', '', False, None, self.color])
-        self.tree_select.select_iter(tree_iter)
         self.tree_view.set_expander_column(self.name_column)
+
+    def selection_function(self, selection, tree_store, path, other):
+        str_path = str(path).split(':')
+        if self.current_video != self.tree_store[str_path[0]][0]:
+            return False
+        if len(str_path) < 2:
+            return False
+        return True
+
+    def on_open_video(self, video):
+        self.current_video = video
+        if self.current_video_iter is not None:
+            self.tree_view.collapse_row(self.tree_store.get_path(self.current_video_iter))
+        if video in self.video_dict:
+            self.current_video_iter = self.video_dict[video]
+            self.tree_view.expand_row(self.tree_store.get_path(self.current_video_iter), True)
+        else:
+            self.current_video_iter = self.tree_store.append(None, [video, '', '', False, None, Gdk.RGBA()])
+            self.video_dict.update({video: self.current_video_iter})
+            tree_iter = self.tree_store.append(self.current_video_iter, ['Doodles', '', '', False, None, self.color])
+            self.tree_view.expand_row(self.tree_store.get_path(self.current_video_iter), True)
+            self.tree_select.select_iter(tree_iter)
+        self.update_draw_markings_func()
 
     def on_color_button(self, button):
         color = button.get_rgba()
@@ -101,6 +128,10 @@ class GridHandler:
         self.jump_to_frame_func(position)
 
     def on_show_hide(self, button, path):
+        self._on_show_hide(path)
+        self.update_draw_markings_func()
+
+    def _on_show_hide(self, path):
         marking = self.tree_store[path][4]
         if marking:
             if self.tree_store[path][3]:
@@ -113,21 +144,21 @@ class GridHandler:
             n_children = self.tree_store.iter_n_children(tree_iter)
             for i in range(n_children):
                 child = self.tree_store.iter_nth_child(tree_iter, i)
-                marking = self.tree_store[child][4]
-                if self.tree_store[child][3]:
-                    marking.hide = False
-                else:
-                    marking.hide = True
-                self.tree_store[child][3] = not self.tree_store[child][3]
+                new_path = self.tree_store.get_path(child)
+                self._on_show_hide(new_path)
             self.tree_store[tree_iter][3] = not self.tree_store[tree_iter][3]
-        self.update_draw_markings_func()
 
     def on_tree_change(self, selection):
         model, tree_iter = selection.get_selected()
         if tree_iter:
             self.current_iter = tree_iter
             self.current_selection = model[tree_iter][4]
-            self.current_path = str(model.get_path(tree_iter)).split(':')[0]
+            self.current_path = ''
+            temp = str(model.get_path(tree_iter)).split(':')
+            if len(temp) <= 2:
+                self.current_path = ':'.join(temp)
+            else:
+                self.current_path = ':'.join(temp[:2])
             self.current_name = model[self.current_path][0]
         else:
             self.current_iter = None
@@ -139,7 +170,7 @@ class GridHandler:
         tree_iter = self.tree_store.get_iter_from_string(self.current_path)
         time = str('%.1f' % (marking.marking[-1] * 1e-9))
         length = str('%.2f' % (marking.data[0]) if marking.data[0] else '')
-        self.tree_store.append(tree_iter, ['', time, length, False, marking, marking.color])
+        self.tree_store.append(tree_iter, [self.current_name, time, length, False, marking, marking.color])
 
     def on_add(self, button):
         dialog = TrackerPopUp(self.window)
@@ -147,7 +178,7 @@ class GridHandler:
         if response == Gtk.ResponseType.OK:
             name = dialog.get_text()
             dialog.destroy()
-            tree_iter = self.tree_store.append(None, [name, '', '', False, None, self.color])
+            tree_iter = self.tree_store.append(self.current_video_iter, [name, '', '', False, None, self.color])
             self.tree_select.select_iter(tree_iter)
         else:
             dialog.destroy()
