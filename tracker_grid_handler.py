@@ -1,3 +1,4 @@
+import os
 from tracker_popup import TrackerPopUp
 import gi
 gi.require_version('Gtk', '3.0')
@@ -167,9 +168,9 @@ class GridHandler:
             self.current_name = None
 
     def add_marking(self, marking):
-        tree_iter = self.tree_store.get_iter_from_string(self.current_path)
         time = str('%.1f' % (marking.marking[-1] * 1e-9))
         length = str('%.2f' % (marking.data[0]) if marking.data[0] else '')
+        tree_iter = self.tree_store.get_iter_from_string(self.current_path)
         self.tree_store.append(tree_iter, [self.current_name, time, length, False, marking, marking.color])
 
     def on_add(self, button):
@@ -186,12 +187,20 @@ class GridHandler:
     def add_marking_from_csv(self, marking):
         time = str('%.1f' % (marking.marking[-1] * 1e-9))
         length = str('%.2f' % (marking.data[0]) if marking.data[0] else '')
-        for row in self.tree_store:
-            if marking.name == str(row[0]):
-                self.tree_store.append(row.iter, ['', time, length, False, marking, marking.color])
+        video_name = marking.video.split(os.sep)[-1]
+        for video in self.tree_store:
+            if video_name == str(video[0]):
+                for name in video.iterchildren():
+                    if marking.name == str(name[0]):
+                        self.tree_store.append(name.iter, ['', time, length, False, marking, marking.color])
+                        return None
+                tree_iter = self.tree_store.append(video.iter, [marking.name, '', '', False, None, marking.color])
+                self.tree_store.append(tree_iter, ['', time, length, False, marking, marking.color])
                 return None
-        tree_iter = self.tree_store.append(None, [marking.name, '', '', False, None, marking.color])
-        self.tree_store.append(tree_iter, ['', time, length, False, marking, marking.color])
+        tree_iter1 = self.tree_store.append(None, [video_name, '', '', False, None, Gdk.RGBA()])
+        self.video_dict.update({video_name: tree_iter1})
+        tree_iter2 = self.tree_store.append(tree_iter1, [marking.name, '', '', False, None, marking.color])
+        self.tree_store.append(tree_iter2, ['', time, length, False, marking, marking.color])
 
     def on_remove(self, button):
         if self.current_iter:

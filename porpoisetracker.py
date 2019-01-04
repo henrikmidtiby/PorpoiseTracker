@@ -238,7 +238,7 @@ class PorpoiseTracker(Gtk.Application):
                 lon = float(match.group(2))
                 self.drone_log.video_lat_lon = (lat, lon)
             self.menu.enable_menu_item('_Export video', True)
-            self.mouse_draw.video = file2
+            self.mouse_draw.video = self.video_file
             self.video_open = True
             if self.drone_log_open:
                 self.drone_log.get_video_start_time()
@@ -268,6 +268,7 @@ class PorpoiseTracker(Gtk.Application):
             if self.video_open:
                 self.drone_log.get_video_start_time()
                 self.drone_log.update_video_plot()
+            self.mouse_draw.log_file = log_file
             self.enable_draw_horizon_menu()
             self.enable_media_menu(['_Change video start time'], True)
             self.enable_media_menu(['_Open drone log plot window'], True)
@@ -309,6 +310,7 @@ class PorpoiseTracker(Gtk.Application):
             print("Opening fov file: '%s'" % fov_file)
             self.fov.set_fov_from_file(fov_file)
             self.fov_open = True
+            self.mouse_draw.fov_file = fov_file
             self.enable_draw_horizon_menu()
             self.open_status()
         except ValueError:

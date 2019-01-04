@@ -33,6 +33,8 @@ class MouseDrawHandler:
         self.markings = defaultdict(list)
         self.color = Gdk.RGBA(1, 0, 0, 1)
         self.video = None
+        self.log_file = None
+        self.fov_file = None
         self.horizon_dict = self.get_horizon_dict()
 
     def print_drone_height(self, position):
@@ -107,7 +109,7 @@ class MouseDrawHandler:
             data = self.data_tuple(length, drone_data[-1], latlon[0], latlon[1], world_point[0], world_point[1], zone,
                                    drone_data[0], drone_data[1][0], drone_data[1][1], drone_data[1][2],
                                    drone_data[2][0], drone_data[2][1])
-            line = MarkObject(self.grid_handler.current_name, self.color, draw_mark, data, self.video)
+            line = MarkObject(self.grid_handler.current_name, self.color, draw_mark, data, self.video, self.log_file, self.fov_file)
             self.grid_handler.add_marking(line)
             self.markings['lines'].append(line)
             self.update_draw_lines()
@@ -126,7 +128,7 @@ class MouseDrawHandler:
             data = self.data_tuple(None, drone_data[-1], latlon[0], latlon[1], world_point[0], world_point[1], zone,
                                    drone_data[0], drone_data[1][0], drone_data[1][1], drone_data[1][2],
                                    drone_data[2][0], drone_data[2][1])
-            point = MarkObject(self.grid_handler.current_name, self.color, draw_mark, data, self.video)
+            point = MarkObject(self.grid_handler.current_name, self.color, draw_mark, data, self.video, self.log_file, self.fov_file)
             self.grid_handler.add_marking(point)
             self.markings['points'].append(point)
             self.update_draw_points()
@@ -175,7 +177,7 @@ class MouseDrawHandler:
             writer = csv.writer(csv_file, delimiter=',')
             header = ['name', 'length', 'time', 'lat', 'lon', 'easting', 'northing', 'zone', 'drone height', 'drone yaw', 'drone pitch', 'drone roll',
                       'drone lat', 'drone lon', 'x1', 'y1', 'x2', 'y2', 'width', 'height', 'video position',
-                      'red', 'green', 'blue', 'alpha', 'video name']
+                      'red', 'green', 'blue', 'alpha', 'video name', 'log file', 'FOV file']
             writer.writerow(header)
             for p in self.markings['points']:
                 marking = [p.marking[0], p.marking[1], None, None]
@@ -186,6 +188,8 @@ class MouseDrawHandler:
                 color = [p.color.red, p.color.green, p.color.blue, p.color.alpha]
                 row.extend(color)
                 row.append(p.video)
+                row.append(p.log_file)
+                row.append(p.fov_file)
                 writer.writerow(row)
             for l in self.markings['lines']:
                 row = [l.name]
@@ -194,6 +198,8 @@ class MouseDrawHandler:
                 color = [l.color.red, l.color.green, l.color.blue, l.color.alpha]
                 row.extend(color)
                 row.append(l.video)
+                row.append(l.log_file)
+                row.append(l.fov_file)
                 writer.writerow(row)
 
     def open_annotations(self, filename):
@@ -207,25 +213,25 @@ class MouseDrawHandler:
 
     def add_line_from_csv(self, row):
         draw_mark = np.array([float(row.get('x1', 0)), float(row.get('y1', 0)), float(row.get('x2', 0)), float(row.get('y2', 0)),
-                              float(row.get('width', 0)), float(row.get('height', 0)), int(row.get('video position', 0))])
+                              float(row.get('width', 0)), float(row.get('height', 0)), int(float(row.get('video position', 0)))])
         data = self.data_tuple(float(row.get('length', 0)), row.get('time'), float(row.get('lat', 0)), float(row.get('lon', 0)),
                                float(row.get('easting', 0)), float(row.get('northing', 0)), row.get('zone'),
                                float(row.get('drone height', 0)), float(row.get('drone yaw', 0)), float(row.get('drone pitch', 0)), float(row.get('drone roll', 0)),
                                float(row.get('drone lat', 0)), float(row.get('drone lon', 0)))
         color = Gdk.RGBA(float(row.get('red', 1)), float(row.get('green', 0)), float(row.get('blue', 0)), float(row.get('alpha', 1)))
-        line = MarkObject(row.get('name'), color, draw_mark, data, row.get('video name'))
+        line = MarkObject(row.get('name'), color, draw_mark, data, row.get('video name'), row.get('log file', ''), row.get('FOV file', ''))
         self.grid_handler.add_marking_from_csv(line)
         self.markings['lines'].append(line)
         self.update_draw_lines()
 
     def add_point_from_csv(self, row):
-        draw_mark = np.array([float(row.get('x1', 0)), float(row.get('y1', 0)), float(row.get('width', 0)), float(row.get('height', 0)), int(row.get('video position', 0))])
+        draw_mark = np.array([float(row.get('x1', 0)), float(row.get('y1', 0)), float(row.get('width', 0)), float(row.get('height', 0)), int(float(row.get('video position', 0)))])
         data = self.data_tuple(None, row.get('time'), float(row.get('lat', 0)), float(row.get('lon', 0)),
                                float(row.get('easting', 0)), float(row.get('northing', 0)), row.get('zone'),
                                float(row.get('drone height', 0)), float(row.get('drone yaw', 0)), float(row.get('drone pitch', 0)), float(row.get('drone roll', 0)),
                                float(row.get('drone lat', 0)), float(row.get('drone lon', 0)))
         color = Gdk.RGBA(float(row.get('red', 1)), float(row.get('green', 0)), float(row.get('blue', 0)), float(row.get('alpha', 1)))
-        point = MarkObject(row.get('name'), color, draw_mark, data, row.get('video name'))
+        point = MarkObject(row.get('name'), color, draw_mark, data, row.get('video name'), row.get('log file', ''), row.get('FOV file', ''))
         self.grid_handler.add_marking_from_csv(point)
         self.markings['points'].append(point)
         self.update_draw_points()
