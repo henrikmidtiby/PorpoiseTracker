@@ -120,6 +120,7 @@ class DroneLog:
             longitude_idx = field_names.index('OSD.longitude')
             video_start = None
             video_end = None
+            time = None
             last_is_video = ''
             for row in reader:
                 if row[update_time_idx] != '':
@@ -153,6 +154,8 @@ class DroneLog:
                         video_start = None
                         video_end = None
                     last_is_video = is_video
+            if video_start and video_end is None:
+                self.video_list.append((video_start, time))
 
     def get_video_start_time(self):
         """
