@@ -231,12 +231,15 @@ class PorpoiseTracker(Gtk.Application):
             self.enable_draw_horizon_menu()
             self.video.playback_button.connect('clicked', self._enable_media_menu)
             self.drone_log.set_video_length(self.video.duration * 1e-9)
-            video_location_string = ffmpeg.probe(file, cmd=cmd)['format']['tags']['location']
-            match = re.match(r'([-+]\d+.\d+)([-+]\d+.\d+)([-+]\d+.\d+)', video_location_string)
-            if match:
-                lat = float(match.group(1))
-                lon = float(match.group(2))
-                self.drone_log.video_lat_lon = (lat, lon)
+            try:
+                video_location_string = ffmpeg.probe(file, cmd=cmd)['format']['tags']['location']
+                match = re.match(r'([-+]\d+.\d+)([-+]\d+.\d+)([-+]\d+.\d+)', video_location_string)
+                if match:
+                    lat = float(match.group(1))
+                    lon = float(match.group(2))
+                    self.drone_log.video_lat_lon = (lat, lon)
+            except KeyError:
+                pass
             self.menu.enable_menu_item('_Export video', True)
             self.mouse_draw.video = self.video_file
             self.video_open = True
