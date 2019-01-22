@@ -38,7 +38,9 @@ class Fov:
 
     def set_camera_params(self, mat_file):
         mat_contents = sio.loadmat(mat_file, squeeze_me=True)
-        self.camera_matrix = np.transpose(mat_contents['camera_matrix'])
+        self.camera_matrix = mat_contents['camera_matrix']
+        if self.camera_matrix[0, 2] == 0:
+            self.camera_matrix = np.transpose(self.camera_matrix)
         self.dist_coefficients = np.append(mat_contents['dist_coeff'], [0, 0])
 
     def set_fov(self, horizontal_fov, vertical_fov):
