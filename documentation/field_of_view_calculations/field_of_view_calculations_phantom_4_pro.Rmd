@@ -35,3 +35,44 @@ acos((a^2 + b^2 - c^2) / (2*a*b)) * 180 / pi
 
 ![](vertical_fov.jpg)
 
+# Investigation of the sensitivity of the measured distances
+
+## HFOV
+
+Real value
+```{r}
+a <- 136.5
+b <- 124
+c <- 151
+acos((a^2 + b^2 - c^2) / (2*a*b)) * 180 / pi
+```
+
+All distances changed by 1cm, each in the direction that 
+increases the calculated field of view.
+```{r}
+a <- 136.5 - 1 
+b <- 124 - 1 
+c <- 151 + 1
+acos((a^2 + b^2 - c^2) / (2*a*b)) * 180 / pi
+```
+
+
+
+## VFOV 
+
+Real value
+```{r}
+a <- 137.3
+b <- 136
+c <- 96.2
+acos((a^2 + b^2 - c^2) / (2*a*b)) * 180 / pi
+```
+
+All distances changed by 1cm, each in the direction that 
+increases the calculated field of view.
+```{r}
+a <- 137.3 - 1 
+b <- 136 - 1 
+c <- 96.2 + 1
+acos((a^2 + b^2 - c^2) / (2*a*b)) * 180 / pi
+```
