@@ -1,9 +1,10 @@
-scipy>=1.1.0
+cairocffi>=0.9.0
+cffi>=1.11.5
+ffmpeg>=1.4
+ffmpeg-python==0.1.17
+matplotlib==3.0.1
 numpy>=1.13.3
 opencv_python>=3.4.2.17
-utm>=0.4.2
-cffi>=1.11.5
-cairocffi>=0.9.0
-matplotlib>=2.2.3
-ffmpeg-python>=0.1.17
 PyGObject
+scipy>=1.1.0
+utm>=0.4.2
