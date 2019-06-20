@@ -6,3 +6,4 @@ cffi>=1.11.5
 cairocffi>=0.9.0
 matplotlib>=2.2.3
 ffmpeg-python>=0.1.17
+PyGObject
