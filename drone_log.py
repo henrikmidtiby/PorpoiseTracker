@@ -228,9 +228,10 @@ class DroneLog:
 
 
 class NavigationToolbar(NavigationToolbar2GTK3):
-    # only display the buttons we need
+    # Only display the buttons we need
     toolitems = [t for t in NavigationToolbar2GTK3.toolitems if
-                 t[0] in ('Home', 'Zoom', 'Save')]
+                 t[0] in ('Home', 'Zoom', 'Save', 'Back', 'Forward')]
+    pass
 
 
 class PlotWindow(Gtk.Window):
