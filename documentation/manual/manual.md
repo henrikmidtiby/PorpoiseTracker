@@ -15,7 +15,7 @@ below is intended for that platform.
 
 
 
-```{bash eval=FALSE, include=TRUE}
+```
 sudo apt install python3-venv wine64 gstreamer1.0-libav gobject-introspection 
 sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0
 mkdir ~/porpoisetracker
@@ -38,7 +38,7 @@ cd ..
 ### Launching the program
 
 The program is launched from the command line,by running the commands.
-```{bash eval=FALSE, include=TRUE}
+```
 cd ~/porpoisetracker
 source env/bin/activate
 cd PorpoiseTracker
