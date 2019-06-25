@@ -47,7 +47,7 @@ python porpoisetracker.py
 
 At this point, the main window is displayed.
 
-![Main window when no video has been loaded.](pic/Porpoise Measure_010.png)
+![Main window when no video has been loaded.](pic/PorpoiseMeasure_010.png)
 
 ### Loading data into the program
 
@@ -102,10 +102,10 @@ and that the generated results will be **invalid**.
 
 
 
-![Artificial horison](pic/Porpoise Measure_002.png)
+![Artificial horison](pic/PorpoiseMeasure_002.png)
 
 
-![Artificial horison with compas directors. In this case the camera is looking down.](pic/Porpoise Measure_003.png)
+![Artificial horison with compas directors. In this case the camera is looking down.](pic/PorpoiseMeasure_003.png)
 
 ### Yaw, pitch and roll plot
 
@@ -124,7 +124,7 @@ the video by clicking on a gray shaded region in the Yaw, pitch, roll plot.
 
 
 
-![Camera height and orientation](pic/Yaw Pitch Roll Plot_001.png)
+![Camera height and orientation](pic/YawPitchRollPlot_001.png)
 
 
 
