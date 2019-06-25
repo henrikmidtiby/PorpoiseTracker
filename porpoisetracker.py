@@ -47,6 +47,7 @@ class PorpoiseTracker(Gtk.Application):
         self.drone_log_open = False
         self.fov_open = False
         self.camera_params_open = False
+        self.current_folder = None
 
     def add_menu(self):
         self.add_file_submenu()
@@ -202,7 +203,11 @@ class PorpoiseTracker(Gtk.Application):
             self.video.emit_draw_signal()
 
     def on_open_video(self, *_):
-        dialog = FileDialog(self.window, 'Choose a video', 'open')
+        print("on_open_video")
+        dialog = FileDialog(self.window,
+                            'Choose a video',
+                            'open',
+                            current_folder=self.current_folder)
         dialog.add_mime_filter('Video', 'video/quicktime')
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
@@ -213,6 +218,7 @@ class PorpoiseTracker(Gtk.Application):
             dialog.destroy()
 
     def open_video_from_file(self, file):
+        self.current_folder = file
         if sys.platform == 'win32':
             path_as_list = file.split('\\')
             file2 = ''
@@ -252,7 +258,10 @@ class PorpoiseTracker(Gtk.Application):
             self.grid_handler.update_status('Error opening video', 'error')
 
     def on_import_drone_log(self, *_):
-        dialog = FileDialog(self.window, 'Choose a drone log', 'open')
+        dialog = FileDialog(self.window,
+                            'Choose a drone log',
+                            'open',
+                            current_folder=self.current_folder)
         dialog.add_mime_filter('raw log', 'text/plain')
         dialog.add_mime_filter('csv log', 'text/csv')
         response = dialog.run()
@@ -264,6 +273,7 @@ class PorpoiseTracker(Gtk.Application):
             dialog.destroy()
 
     def open_drone_log_from_file(self, log_file):
+        self.current_folder = log_file
         try:
             print("Opening log file: '%s'" % log_file)
             self.open_drone_log(log_file)
@@ -300,7 +310,10 @@ class PorpoiseTracker(Gtk.Application):
         yield False
 
     def on_import_fov(self, *_):
-        dialog = FileDialog(self.window, 'Choose a FOV file', 'open')
+        dialog = FileDialog(self.window,
+                            'Choose a FOV file',
+                            'open',
+                            current_folder=self.current_folder)
         dialog.add_mime_filter('csv', 'test/csv')
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
@@ -309,6 +322,7 @@ class PorpoiseTracker(Gtk.Application):
         dialog.destroy()
 
     def open_fov_file(self, fov_file):
+        self.current_folder = fov_file
         try:
             print("Opening fov file: '%s'" % fov_file)
             self.fov.set_fov_from_file(fov_file)
@@ -320,7 +334,10 @@ class PorpoiseTracker(Gtk.Application):
             self.grid_handler.update_status('Error opening FOV file', 'error')
 
     def on_import_camera_params(self, *_):
-        dialog = FileDialog(self.window, 'Choose a Camera param Matlab file', 'open')
+        dialog = FileDialog(self.window,
+                            'Choose a Camera param Matlab file',
+                            'open',
+                            current_folder=self.current_folder)
         dialog.add_mime_filter('Matlab file', 'text/plain')
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
@@ -331,6 +348,7 @@ class PorpoiseTracker(Gtk.Application):
             dialog.destroy()
 
     def open_camera_params_file(self, mat_file):
+        self.current_folder = mat_file
         try:
             print("Opening camera parameters in: '%s'" % mat_file)
             self.fov.set_camera_params(mat_file)
