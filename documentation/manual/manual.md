@@ -5,39 +5,18 @@ date: "June 25, 2019"
 output: html_document
 ---
 
-A short guide on how to use the Porpoise Tracker program.
+This is a short guide on how to use the Porpoise Tracker program.
+Given a matching flight log and video of a marine animal, e.g. a 
+harbor porpoise, the program lets the user to track the position of the
+marine animal and estimate its length.
 
-
-## Installation
-
-The Porpoise tracker program was developed under Ubuntu 18.04, and the installation guide 
-below is intended for that platform.
-
-
-
-```
-sudo apt install python3-venv wine64 gstreamer1.0-libav gobject-introspection 
-sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0
-mkdir ~/porpoisetracker
-cd ~/porpoisetracker
-python3 -m venv env
-source env/bin/activate
-git clone https://github.com/henrikmidtiby/PorpoiseTracker.git
-cd PorpoiseTracker
-pip install -r requirements.txt
-cd ..
-git clone https://github.com/henrikmidtiby/gtk_modules.git
-cd gtk_modules
-pip install -e .
-cd ..
-```
-
+To install the program, please follow the [installation guide](installation.md).
 
 ## Using the program
 
 ### Launching the program
 
-The program is launched from the command line,by running the commands.
+The program is launched from the command line, by running the commands.
 ```
 cd ~/porpoisetracker
 source env/bin/activate
