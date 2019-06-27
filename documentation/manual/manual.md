@@ -12,6 +12,11 @@ marine animal and estimate its length.
 
 To install the program, please follow the [installation guide](installation.md).
 
+Follow this [guide](getting_flight_log_using_itunes.md) to get access to flight 
+logs from DJI drones, when an ios device was used together with the remote control.
+
+An example data set is available on [zenodo](https://doi.org/10.5281/zenodo.3257354).
+
 ## Using the program
 
 ### Launching the program
@@ -54,6 +59,9 @@ during the flight.
 
 The main window consists of three elements: the video display (top left), 
 video navigation toolbar (botton left) and an annotation widget (right).
+
+#### Video display
+
 The video display, shows the current frama from the video and
 details about the camera heigth and orientation.
 The camera height and orientation is displayed as rough numbers in the 
@@ -86,6 +94,35 @@ and that the generated results will be **invalid**.
 
 ![Artificial horison with compas directors. In this case the camera is looking down.](pic/PorpoiseMeasure_003.png)
 
+
+#### Video navigation toolbar
+
+The video navigation toolbar is used to control playback of the video.
+Leftmost there are the play/pause and stop buttons
+and to the right there is a slider which shows how long the video has 
+progressed.
+
+![Video navigation toolbar](pic/VideoNavigationToolbar.png)
+
+
+
+#### Annotation widget
+
+The annotation widget contains a list of objects of which their location or
+extend have been annotated in the video and a control bar positioned at the bottom.
+
+The control bar has the following entries
+
+* Status indicator (green if all required information have been loaded)
+* Button for adding a new observation object
+* Button for removing a single observation or an observation object including all associated observations.
+* Color selector 
+* Button for jumping to the frame of the currently selected observation
+
+![Annotation widget](pic/AnnotationWidget.png)
+
+
+
 ### Yaw, pitch and roll plot
 
 After opening a drone log file, the Yaw, pitch and roll plot open automatically.
@@ -106,8 +143,18 @@ the video by clicking on a gray shaded region in the Yaw, pitch, roll plot.
 ![Camera height and orientation](pic/YawPitchRollPlot_001.png)
 
 
+### Annotating
+
+
+
+![Estimating length of porpoises](pic/MotherAndCalfAnnotatedRed.jpg)
+
+
+
+
+
+### Exporting data to csv files
 
 
 # Todo: 
 
-Publish some example data.
