@@ -1,0 +1,30 @@
+{
+  "@context": "https://raw.githubusercontent.com/codemeta/codemeta/master/codemeta.jsonld",
+  "@type": "Code",
+  "author": [
+    {
+      "@id": "",
+      "@type": "Person",
+      "email": "hesc@mmmi.sdu.dk",
+      "name": "Henrik Dyrberg Egemose",
+      "affiliation": "University of Southern Denmark"
+    },
+    {
+      "@id": "https://orcid.org/0000-0002-3310-5680",
+      "@type": "Person",
+      "email": "hemi@mmmi.sdu.dk",
+      "name": "Henrik Skov Midtiby",
+      "affiliation": "University of Southern Denmark"
+    }
+  ],
+  "identifier": "",
+  "codeRepository": "https://github.com/henrikmidtiby/PorpoiseTracker/",
+  "datePublished": "2019-08-01",
+  "dateModified": "2019-08-01",
+  "dateCreated": "2019-08-01",
+  "description": "PorpoiseTracker is a tool to measure and track porpoises or other things floating in the water surface in recordings from DJI UAVs.",
+  "keywords": "python, UAV, DJI, marine animals",
+  "license": "BSD",
+  "title": "Porpoise Tracker",
+  "version": "v1.0.0"
+}
