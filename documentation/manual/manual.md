@@ -62,7 +62,7 @@ video navigation toolbar (botton left) and an annotation widget (right).
 
 #### Video display
 
-The video display, shows the current frama from the video and
+The video display, shows the current frame from the video and
 details about the camera heigth and orientation.
 The camera height and orientation is displayed as rough numbers in the 
 top left corner of the video display.
@@ -145,7 +145,16 @@ the video by clicking on a gray shaded region in the Yaw, pitch, roll plot.
 
 ### Annotating
 
+The annotation of objects in the video is the most central part of the program.
+By annotating objects it is possible to get precise information about objects
+placement and size.
+To annotate objects, you need to specify the annotation name that should be used.
+To to that you can either add a new by clicking on the + button (near 1 in the image below)
+or select an existing name (near 3 in the image below.).
 
+To get the position of an object in the water surface, click on the object.
+To get the distance between two objects in the water surface, click and hold with the mouse on the first object, then move the cursor to the second object and finally release the click.
+To get access to the values, they need to be exported as a csv file.
 
 ![Estimating length of porpoises](pic/MotherAndCalfAnnotatedRed.jpg)
 
@@ -154,6 +163,17 @@ the video by clicking on a gray shaded region in the Yaw, pitch, roll plot.
 
 
 ### Exporting data to csv files
+
+When one or more objects have been annotated, it is possible to export the
+anntations along with the calculated positions and distances to the csv format.
+To export data to a csv file, do the following:
+
+* File -> Save As
+* Specify filename
+
+After having exported the information to a .csv file, the data can be loaded into a
+spreadsheet program like MS Excel or Libre Office.
+
 
 
 # Todo: 
