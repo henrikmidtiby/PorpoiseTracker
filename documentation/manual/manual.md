@@ -173,8 +173,33 @@ To export data to a csv file, do the following:
 
 After having exported the information to a .csv file, the data can be loaded into a
 spreadsheet program like MS Excel or Libre Office.
+The exported file contains the following columns
+
+* Name, the name of the annotation object
+* length, the length of the anntated object (is only provided if a length has been measured)
+* time, time of the observation 
+* lat, latitude of the object
+* lon, longiture of the object
+* drone height, heigt of the drone at the annotation time
+* drone yaw, drone pose at annotation time
+* drone pitch, drone pose at annotation time
+* drone roll, drone pose at annotation time
+* drone lat, drone pose at annotation time
+* drone lon, drone pose at annotation time
+* x1, relative image coordinate of annotation 
+* y1, relative image coordinate of annotation 
+* x2, relative image coordinate of annotation 
+* y2, relative image coordinate of annotation 
+* width, size of displayed video during annotation
+* height, size of displayed video during annotation
+* video position
+* red, annotation color information
+* green, annotation color information
+* blue, annotation color information
+* alpha, annotation color information
+* video name, name of video file'
 
 
 
-# Todo: 
+
 
