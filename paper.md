@@ -4,6 +4,7 @@ title: Using drones to quantify the
 authors:
 - affiliation: 1
   name: Henrik Dyrberg Egemose
+  orcid: 0000-0002-6765-8216
 - affiliation: 1
   name: Henrik Skov Midtiby
   orcid: 0000-0002-3310-5680
