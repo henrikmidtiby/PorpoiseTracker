@@ -11,9 +11,7 @@ The Porpoise tracker program was developed under Ubuntu 18.04, and the installat
 below is intended for that platform.
 
 ```
-sudo apt install python3-venv wine64 gstreamer1.0-libav gobject-introspection 
-sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0
-sudo apt install libgirepository1.0-dev
+sudo apt install python3-venv wine64 gstreamer1.0-libav gobject-introspection python3-gi python3-gi-cairo gir1.2-gtk-3.0 libgirepository1.0-dev git
 mkdir ~/porpoisetracker
 cd ~/porpoisetracker
 python3 -m venv env
